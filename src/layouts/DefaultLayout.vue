@@ -2,6 +2,7 @@
 import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/authStore";
+import logoUrl from "@/assets/logo.png"; // 👈 Import logo di sini
 import {
   IconLayoutDashboard,
   IconCash,
@@ -40,8 +41,7 @@ const logout = () => {
   router.push("/login");
 };
 
-// ── Menu struktur (dari MAIN.pas) ─────────────────────────────────────
-// Direplikasi dari: _1File, _2Master, _3Transaksi, _4Laporan, _5Posting
+// ── Menu struktur ─────────────────────────────────────────────────────
 const menus = [
   {
     title: "Dashboard",
@@ -216,10 +216,8 @@ const menus = [
 const openGroups = ref<Record<string, boolean>>({});
 const toggleGroup = (title: string) => {
   if (openGroups.value[title]) {
-    // Kalau sudah terbuka → tutup
     openGroups.value[title] = false;
   } else {
-    // Tutup semua, buka yang ini
     openGroups.value = { [title]: true };
   }
 };
@@ -227,7 +225,6 @@ const toggleGroup = (title: string) => {
 
 <template>
   <v-app>
-    <!-- ── Navigation Drawer ── -->
     <v-navigation-drawer
       v-model="drawer"
       :rail="rail"
@@ -235,10 +232,9 @@ const toggleGroup = (title: string) => {
       class="finance-drawer"
       width="240"
     >
-      <!-- Logo / Brand -->
-      <div class="drawer-brand">
+      <div class="drawer-brand" :class="{ 'rail-brand': rail }">
         <div class="brand-logo">
-          <span class="brand-icon">₹</span>
+          <img :src="logoUrl" alt="Logo" class="img-logo" />
         </div>
         <transition name="fade">
           <div v-if="!rail" class="brand-text">
@@ -250,10 +246,8 @@ const toggleGroup = (title: string) => {
 
       <v-divider class="mx-3 mb-1" />
 
-      <!-- Menu items -->
       <v-list density="compact" nav class="px-2">
         <template v-for="menu in menus" :key="menu.title">
-          <!-- Single item (Dashboard) -->
           <v-list-item
             v-if="!menu.children"
             :to="menu.route"
@@ -273,7 +267,6 @@ const toggleGroup = (title: string) => {
             <template #title v-if="!rail">{{ menu.title }}</template>
           </v-list-item>
 
-          <!-- Group with children -->
           <template v-else>
             <v-list-item
               rounded="lg"
@@ -302,7 +295,6 @@ const toggleGroup = (title: string) => {
               </template>
             </v-list-item>
 
-            <!-- Children -->
             <v-expand-transition>
               <div v-if="openGroups[menu.title] && !rail" class="nav-children">
                 <v-list-item
@@ -331,7 +323,6 @@ const toggleGroup = (title: string) => {
         </template>
       </v-list>
 
-      <!-- User Info & Logout di bawah -->
       <template #append>
         <v-divider class="mx-3" />
         <div class="drawer-footer">
@@ -359,7 +350,6 @@ const toggleGroup = (title: string) => {
       </template>
     </v-navigation-drawer>
 
-    <!-- ── App Bar ── -->
     <v-app-bar flat class="finance-appbar" height="52">
       <v-btn variant="text" size="small" @click="rail = !rail" class="ml-1">
         <IconMenu2 :size="20" :stroke-width="1.8" />
@@ -391,7 +381,6 @@ const toggleGroup = (title: string) => {
       </template>
     </v-app-bar>
 
-    <!-- ── Main Content ── -->
     <v-main class="finance-main">
       <router-view />
     </v-main>
@@ -411,22 +400,35 @@ const toggleGroup = (title: string) => {
   gap: 10px;
   padding: 14px 16px 10px;
   min-height: 64px;
+  transition: padding 0.2s ease;
 }
+
+/* 👈 Tambahan styling untuk memusatkan logo saat rail aktif */
+.rail-brand {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  justify-content: center !important;
+}
+
+/* 👈 Styling box putih (bisa diganti transparan) khusus logo */
 .brand-logo {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.15);
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: white;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
-.brand-icon {
-  font-size: 20px;
-  color: #a5d6a7;
-  font-weight: 700;
+.img-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 4px; /* Memberi jarak agar logo tidak nabrak tepi box */
 }
+
 .brand-title {
   font-size: 14px;
   font-weight: 700;
@@ -514,6 +516,13 @@ const toggleGroup = (title: string) => {
   justify-content: center;
   flex-shrink: 0;
 }
+/* 👈 Penambahan wrapper untuk teks nama agar text-overflow berfungsi */
+.user-details {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
 .user-name {
   font-size: 11px;
   font-weight: 600;
@@ -528,6 +537,7 @@ const toggleGroup = (title: string) => {
 }
 .logout-btn {
   color: rgba(255, 255, 255, 0.7) !important;
+  flex-shrink: 0;
 }
 .logout-btn:hover {
   color: #ef9a9a !important;
