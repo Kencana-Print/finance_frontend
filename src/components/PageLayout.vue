@@ -83,6 +83,7 @@ const loadingModel = computed({
   flex-direction: column;
   margin: 0 auto;
   width: 100%;
+  height: 100%;
 }
 .desktop-mode {
   height: calc(100vh - 64px);
@@ -92,6 +93,7 @@ const loadingModel = computed({
 .modern-mode {
   padding: 24px;
   gap: 16px;
+  min-height: calc(100vh - 52px);
 }
 
 /* ── Header ── */
@@ -115,7 +117,7 @@ const loadingModel = computed({
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  background: rgba(46, 125, 50, 0.1);   /* primary hijau transparan */
+  background: rgba(46, 125, 50, 0.1); /* primary hijau transparan */
   color: #2e7d32;
 }
 .page-title {
@@ -133,7 +135,7 @@ const loadingModel = computed({
 
 /* ── Content area ── */
 .content-area {
-  flex: 1 1 0;
+  flex: 1 1 auto;
   min-height: 0;
   position: relative;
   display: flex;
@@ -146,7 +148,7 @@ const loadingModel = computed({
   border-top: 3px solid #2e7d32;
 }
 .content-wrapper {
-  flex: 1 1 0;
+  flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;

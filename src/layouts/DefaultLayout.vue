@@ -331,8 +331,8 @@ const toggleGroup = (title: string) => {
               {{ userName.charAt(0).toUpperCase() }}
             </div>
             <div class="user-details">
-              <div class="user-name">{{ userName }}</div>
-              <div class="user-cab">{{ userCabang }}</div>
+              <div class="user-name" :title="userName">{{ userName }}</div>
+              <div class="user-cab" :title="userCabang">{{ userCabang }}</div>
             </div>
           </div>
           <v-btn
@@ -516,7 +516,7 @@ const toggleGroup = (title: string) => {
   justify-content: center;
   flex-shrink: 0;
 }
-/* 👈 Penambahan wrapper untuk teks nama agar text-overflow berfungsi */
+
 .user-details {
   display: flex;
   flex-direction: column;
@@ -527,9 +527,12 @@ const toggleGroup = (title: string) => {
   font-size: 11px;
   font-weight: 600;
   color: white;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.2;
 }
 .user-cab {
   font-size: 10px;
@@ -585,7 +588,8 @@ const toggleGroup = (title: string) => {
 
 /* ── Main ── */
 .finance-main {
-  background: #f1f8f1 !important;
+  background-color: #f1f8f1 !important;
+  min-height: 100vh;
 }
 
 /* Transition */
