@@ -1,0 +1,459 @@
+<script setup lang="ts">
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { useAuthStore } from "@/stores/authStore";
+import { useToast } from "vue-toastification";
+import { IconEye, IconEyeOff, IconLogin } from "@tabler/icons-vue";
+
+const router = useRouter();
+const authStore = useAuthStore();
+const toast = useToast();
+
+const username = ref("");
+const password = ref("");
+const showPass = ref(false);
+const isLoading = ref(false);
+const usernameRef = ref<any>(null);
+
+// Referensi uLogin.pas: FormShow → set focus ke edtUser saat tampil
+onMounted(() => {
+  setTimeout(() => usernameRef.value?.focus(), 100);
+});
+
+const handleLogin = async () => {
+  if (!username.value.trim()) {
+    toast.warning("Username harus diisi.");
+    usernameRef.value?.focus();
+    return;
+  }
+  if (!password.value) {
+    toast.warning("Password harus diisi.");
+    return;
+  }
+
+  isLoading.value = true;
+  try {
+    await authStore.login(username.value.trim().toUpperCase(), password.value);
+    toast.success(`Selamat datang, ${authStore.userName}!`);
+    router.push("/");
+  } catch (e: any) {
+    const msg = e?.response?.data?.message ?? e?.message ?? "Login gagal.";
+    toast.error(msg);
+    usernameRef.value?.focus();
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// Enter di username → pindah ke password (edtUserKeyPress di Delphi)
+const onUsernameEnter = () => {
+  const pwEl = document.getElementById("login-password");
+  pwEl?.focus();
+};
+</script>
+
+<template>
+  <div class="login-page">
+    <!-- Background decorative -->
+    <div class="login-bg">
+      <div class="bg-circle bg-circle-1" />
+      <div class="bg-circle bg-circle-2" />
+      <div class="bg-circle bg-circle-3" />
+    </div>
+
+    <div class="login-container">
+      <!-- Left panel — brand -->
+      <div class="login-left">
+        <div class="brand-area">
+          <div class="brand-logo-wrap">
+            <span class="brand-rupiah">Rp</span>
+          </div>
+          <h1 class="brand-name">FINANCE</h1>
+          <p class="brand-tagline">Sistem Manajemen Keuangan</p>
+        </div>
+
+        <div class="brand-features">
+          <div class="feature-item">
+            <span class="feature-dot" />
+            <span>Kas & Bank — BKM, BKK, BBM, BBK</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-dot" />
+            <span>Kasbon & Penyelesaian</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-dot" />
+            <span>Jurnal Umum & Buku Besar</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-dot" />
+            <span>Rekonsiliasi Bank</span>
+          </div>
+          <div class="feature-item">
+            <span class="feature-dot" />
+            <span>Pembayaran Customer</span>
+          </div>
+        </div>
+
+        <div class="brand-version">v1.0.0</div>
+      </div>
+
+      <!-- Right panel — form login -->
+      <div class="login-right">
+        <div class="login-card">
+          <div class="login-card-header">
+            <h2 class="login-title">Masuk ke Sistem</h2>
+            <p class="login-sub">Gunakan akun yang diberikan oleh IT</p>
+          </div>
+
+          <div class="login-form">
+            <!-- Username -->
+            <div class="field-group">
+              <label class="field-label">Username</label>
+              <input
+                ref="usernameRef"
+                v-model="username"
+                type="text"
+                class="field-input"
+                placeholder="Masukkan username..."
+                autocomplete="username"
+                @keydown.enter="onUsernameEnter"
+                :disabled="isLoading"
+              />
+            </div>
+
+            <!-- Password -->
+            <div class="field-group">
+              <label class="field-label">Password</label>
+              <div class="field-pass-wrap">
+                <input
+                  id="login-password"
+                  v-model="password"
+                  :type="showPass ? 'text' : 'password'"
+                  class="field-input field-input-pass"
+                  placeholder="Masukkan password..."
+                  autocomplete="current-password"
+                  @keydown.enter="handleLogin"
+                  :disabled="isLoading"
+                />
+                <button
+                  class="pass-toggle"
+                  @click="showPass = !showPass"
+                  type="button"
+                  tabindex="-1"
+                >
+                  <IconEyeOff v-if="showPass" :size="16" :stroke-width="1.8" />
+                  <IconEye v-else :size="16" :stroke-width="1.8" />
+                </button>
+              </div>
+            </div>
+
+            <!-- Button login -->
+            <button
+              class="btn-login"
+              @click="handleLogin"
+              :disabled="isLoading"
+            >
+              <span v-if="isLoading" class="btn-spinner" />
+              <IconLogin v-else :size="17" :stroke-width="2" />
+              <span>{{ isLoading ? "Memproses..." : "Masuk" }}</span>
+            </button>
+          </div>
+
+          <div class="login-footer">
+            <span>© {{ new Date().getFullYear() }} Finance System</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+/* ── Page ── */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0d2b0d;
+  position: relative;
+  overflow: hidden;
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+/* Decorative circles */
+.login-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.bg-circle {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(46, 125, 50, 0.25), transparent 70%);
+}
+.bg-circle-1 {
+  width: 600px;
+  height: 600px;
+  top: -200px;
+  left: -150px;
+}
+.bg-circle-2 {
+  width: 400px;
+  height: 400px;
+  bottom: -100px;
+  right: -100px;
+}
+.bg-circle-3 {
+  width: 300px;
+  height: 300px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle,
+    rgba(102, 187, 106, 0.1),
+    transparent 70%
+  );
+}
+
+/* ── Container ── */
+.login-container {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 860px;
+  min-height: 520px;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+}
+
+/* ── Left panel ── */
+.login-left {
+  width: 320px;
+  flex-shrink: 0;
+  background: linear-gradient(160deg, #1b5e20, #2e7d32 60%, #388e3c);
+  padding: 40px 32px;
+  display: flex;
+  flex-direction: column;
+  color: white;
+}
+.brand-area {
+  margin-bottom: 36px;
+}
+.brand-logo-wrap {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.brand-rupiah {
+  font-size: 26px;
+  font-weight: 800;
+  color: #a5d6a7;
+}
+.brand-name {
+  font-size: 28px;
+  font-weight: 800;
+  margin: 0 0 4px;
+  letter-spacing: 0.05em;
+}
+.brand-tagline {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.65);
+  margin: 0;
+}
+
+.brand-features {
+  flex: 1;
+}
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 10px;
+}
+.feature-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #a5d6a7;
+  flex-shrink: 0;
+}
+.brand-version {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  margin-top: 16px;
+}
+
+/* ── Right panel ── */
+.login-right {
+  flex: 1;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+.login-card {
+  width: 100%;
+  max-width: 340px;
+}
+
+.login-card-header {
+  margin-bottom: 28px;
+}
+.login-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 4px;
+}
+.login-sub {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.45);
+  margin: 0;
+}
+
+/* Form fields */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
+.field-input {
+  height: 40px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 13px;
+  color: #111;
+  background: #fafafa;
+  outline: none;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+.field-input:focus {
+  border-color: #2e7d32;
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.12);
+  background: white;
+}
+.field-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.field-pass-wrap {
+  position: relative;
+}
+.field-input-pass {
+  padding-right: 40px;
+}
+.pass-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  padding: 4px;
+}
+.pass-toggle:hover {
+  color: #2e7d32;
+}
+
+/* Login button */
+.btn-login {
+  height: 42px;
+  border-radius: 10px;
+  background: #2e7d32;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition:
+    background 0.2s,
+    transform 0.1s,
+    box-shadow 0.2s;
+  margin-top: 4px;
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+}
+.btn-login:hover:not(:disabled) {
+  background: #1b5e20;
+  box-shadow: 0 6px 16px rgba(46, 125, 50, 0.4);
+}
+.btn-login:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.btn-login:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Spinner */
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Footer */
+.login-footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .login-left {
+    display: none;
+  }
+  .login-container {
+    width: 95%;
+    min-height: unset;
+  }
+  .login-right {
+    padding: 32px 24px;
+  }
+}
+</style>
