@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/authStore";
 import logoUrl from "@/assets/logo.png"; // 👈 Import logo di sini
@@ -32,6 +32,7 @@ const router = useRouter();
 const authStore = useAuthStore();
 const drawer = ref(true);
 const rail = ref(false);
+const isMobile = ref(false);
 
 const userName = computed(() => authStore.userName);
 const userCabang = computed(() => authStore.userCabang);
@@ -40,6 +41,52 @@ const logout = () => {
   authStore.logout();
   router.push("/login");
 };
+
+// Toggle hamburger — beda behavior mobile vs desktop
+const toggleDrawer = () => {
+  if (isMobile.value) {
+    drawer.value = !drawer.value; // mobile: show/hide sepenuhnya
+  } else {
+    rail.value = !rail.value; // desktop: expand/collapse rail
+  }
+};
+
+const updateBreakpoint = () => {
+  const w = window.innerWidth;
+  isMobile.value = w <= 768;
+
+  // Hanya set rail berdasarkan ukuran layar
+  // Jangan reset drawer.value saat resize agar tidak mengganggu user
+  if (!isMobile.value) {
+    rail.value = w <= 1024;
+    drawer.value = true; // desktop/tablet selalu tampil
+  }
+};
+
+// Init pertama kali — set semua state
+const initBreakpoint = () => {
+  const w = window.innerWidth;
+  isMobile.value = w <= 768;
+  if (isMobile.value) {
+    rail.value = false;
+    drawer.value = false; // mobile: mulai tertutup
+  } else if (w <= 1024) {
+    rail.value = true;
+    drawer.value = true;
+  } else {
+    rail.value = false;
+    drawer.value = true;
+  }
+};
+
+onMounted(() => {
+  initBreakpoint();
+  window.addEventListener("resize", updateBreakpoint);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("resize", updateBreakpoint);
+});
 
 // ── Menu struktur ─────────────────────────────────────────────────────
 const menus = [
@@ -150,13 +197,13 @@ const menus = [
         title: "Pembayaran Customer",
         icon: IconReceipt2,
         route: "/posting/pembayaran-customer",
-        menuId: "20",
+        menuId: "51",
       },
       {
         title: "Pembayaran Customer Kaosan",
         icon: IconReceipt2,
-        route: "/posting/pembayaran-customer-kaosan",
-        menuId: "21",
+        route: "/posting/pembayaran-cust-kaosan",
+        menuId: "52",
       },
     ],
   },
@@ -169,31 +216,31 @@ const menus = [
         title: "List Jurnal",
         icon: IconList,
         route: "/laporan/list-jurnal",
-        menuId: "30",
+        menuId: null,
       },
       {
         title: "Buku Besar",
         icon: IconBook,
         route: "/laporan/buku-besar",
-        menuId: "31",
+        menuId: null,
       },
       {
         title: "Kasbon Belum Selesai",
         icon: IconList,
         route: "/laporan/kasbon-belum-selesai",
-        menuId: "32",
+        menuId: null,
       },
       {
         title: "Rekonsiliasi Bank",
         icon: IconBuildingBank,
         route: "/laporan/rekonsiliasi-bank",
-        menuId: "33",
+        menuId: null,
       },
       {
         title: "Stok Finance",
         icon: IconList,
         route: "/laporan/stok-finance",
-        menuId: "34",
+        menuId: null,
       },
     ],
   },
@@ -227,8 +274,9 @@ const toggleGroup = (title: string) => {
   <v-app>
     <v-navigation-drawer
       v-model="drawer"
-      :rail="rail"
-      permanent
+      :rail="!isMobile && rail"
+      :temporary="isMobile"
+      :permanent="!isMobile"
       class="finance-drawer"
       width="240"
     >
@@ -237,7 +285,7 @@ const toggleGroup = (title: string) => {
           <img :src="logoUrl" alt="Logo" class="img-logo" />
         </div>
         <transition name="fade">
-          <div v-if="!rail" class="brand-text">
+          <div v-if="isMobile || !rail" class="brand-text">
             <div class="brand-title">FINANCE</div>
             <div class="brand-sub">Management System</div>
           </div>
@@ -264,7 +312,9 @@ const toggleGroup = (title: string) => {
                 class="nav-icon"
               />
             </template>
-            <template #title v-if="!rail">{{ menu.title }}</template>
+            <template #title v-if="isMobile || !rail">{{
+              menu.title
+            }}</template>
           </v-list-item>
 
           <template v-else>
@@ -272,7 +322,7 @@ const toggleGroup = (title: string) => {
               rounded="lg"
               class="mb-1 nav-group-header"
               :title="rail ? '' : menu.title"
-              @click="!rail && toggleGroup(menu.title)"
+              @click="(isMobile || !rail) && toggleGroup(menu.title)"
             >
               <template #prepend>
                 <component
@@ -283,7 +333,7 @@ const toggleGroup = (title: string) => {
                 />
               </template>
               <template #title v-if="!rail">{{ menu.title }}</template>
-              <template #append v-if="!rail">
+              <template #append v-if="isMobile || !rail">
                 <IconChevronDown
                   :size="14"
                   :stroke-width="2"
@@ -296,9 +346,14 @@ const toggleGroup = (title: string) => {
             </v-list-item>
 
             <v-expand-transition>
-              <div v-if="openGroups[menu.title] && !rail" class="nav-children">
+              <div
+                v-if="openGroups[menu.title] && (isMobile || !rail)"
+                class="nav-children"
+              >
                 <v-list-item
-                  v-for="child in menu.children"
+                  v-for="child in menu.children.filter(
+                    (c) => !c.menuId || authStore.can(c.menuId, 'view'),
+                  )"
                   :key="child.title"
                   :to="child.route"
                   rounded="lg"
@@ -326,7 +381,7 @@ const toggleGroup = (title: string) => {
       <template #append>
         <v-divider class="mx-3" />
         <div class="drawer-footer">
-          <div v-if="!rail" class="user-info">
+          <div v-if="isMobile || !rail" class="user-info">
             <div class="user-avatar">
               {{ userName.charAt(0).toUpperCase() }}
             </div>
@@ -341,17 +396,17 @@ const toggleGroup = (title: string) => {
             color="error"
             @click="logout"
             class="logout-btn"
-            :icon="rail"
+            :icon="!isMobile && rail"
           >
             <IconLogout :size="16" :stroke-width="1.8" />
-            <span v-if="!rail" class="ml-1">Keluar</span>
+            <span v-if="isMobile || !rail" class="ml-1">Keluar</span>
           </v-btn>
         </div>
       </template>
     </v-navigation-drawer>
 
     <v-app-bar flat class="finance-appbar" height="52">
-      <v-btn variant="text" size="small" @click="rail = !rail" class="ml-1">
+      <v-btn variant="text" size="small" @click="toggleDrawer" class="ml-1">
         <IconMenu2 :size="20" :stroke-width="1.8" />
       </v-btn>
 
@@ -610,5 +665,28 @@ const toggleGroup = (title: string) => {
 }
 .finance-drawer :deep(.v-list-item-title) {
   color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* ── Responsif DefaultLayout ── */
+@media (max-width: 1024px) {
+  .appbar-info {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .appbar-user {
+    display: none;
+  }
+  .appbar-title {
+    font-size: 12px;
+  }
+  .finance-drawer {
+    width: 240px !important;
+  }
+  /* Pastikan konten drawer tampil penuh */
+  .finance-drawer :deep(.v-list-item__content) {
+    display: flex !important;
+  }
 }
 </style>

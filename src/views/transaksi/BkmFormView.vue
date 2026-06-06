@@ -314,138 +314,96 @@ const confirmClose = () => {
   >
     <!-- ── LEFT COLUMN ── -->
     <template #left-column>
-      <div
-        class="desktop-form-section header-section"
-        style="
-          height: 100%;
-          overflow-y: auto;
-          overflow-x: hidden;
-          padding-right: 6px;
-        "
-      >
-        <div class="section-title">Informasi BKM</div>
+      <div class="left-col-wrap">
+        <div class="form-section">
+          <div class="form-section-title">Informasi BKM</div>
 
-        <!-- Nomor -->
-        <div class="field-row">
-          <label class="field-lbl">Nomor BKM</label>
-          <div class="d-flex align-center gap-2">
-            <v-text-field
-              :model-value="isEdit ? form.nomor : ''"
-              density="compact"
-              variant="outlined"
-              hide-details
-              readonly
-              :placeholder="isEdit ? '' : 'Otomatis'"
+          <!-- Nomor -->
+          <div class="field-row">
+            <label class="field-lbl">Nomor BKM</label>
+            <div class="input-with-badge">
+              <input
+                :value="isEdit ? form.nomor : ''"
+                readonly
+                class="form-inp mono"
+                :placeholder="isEdit ? '' : 'Otomatis'"
+              />
+              <span v-if="!isEdit" class="badge-info">Auto</span>
+            </div>
+          </div>
+
+          <!-- Tanggal -->
+          <div class="field-row">
+            <label class="field-lbl">Tanggal</label>
+            <input v-model="form.tanggal" type="date" class="form-inp" />
+          </div>
+
+          <!-- Account -->
+          <div class="field-row">
+            <label class="field-lbl">Account <span class="req">*</span></label>
+            <div class="input-with-btn">
+              <input
+                :value="form.rek_kode"
+                readonly
+                class="form-inp mono"
+                style="width: 100px; flex-shrink: 0"
+                placeholder="Kode"
+              />
+              <input
+                :value="form.rek_nama"
+                readonly
+                class="form-inp"
+                placeholder="Nama account"
+              />
+              <button
+                class="icon-btn"
+                type="button"
+                @click="showAccountModal = true"
+              >
+                <IconSearch :size="13" :stroke-width="1.8" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Diterima Dari + Nota -->
+          <div class="field-row-2col">
+            <div class="field-row">
+              <label class="field-lbl">Diterima Dari</label>
+              <input
+                v-model="form.penerima"
+                class="form-inp"
+                placeholder="Nama pemberi"
+              />
+            </div>
+            <div class="field-row">
+              <label class="field-lbl">No. Nota</label>
+              <input
+                v-model="form.nota"
+                class="form-inp"
+                placeholder="No. nota"
+              />
+            </div>
+          </div>
+
+          <!-- Keterangan -->
+          <div class="field-row">
+            <label class="field-lbl">Keterangan</label>
+            <input
+              v-model="form.keterangan"
+              class="form-inp"
+              placeholder="Keterangan penerimaan"
             />
-            <span
-              v-if="!isEdit"
-              style="
-                font-size: 11px;
-                color: #f57c00;
-                font-weight: 600;
-                white-space: nowrap;
-              "
-            >
-              Baru = Otomatis
-            </span>
+          </div>
+
+          <!-- Cabang -->
+          <div class="field-row">
+            <label class="field-lbl">Cabang</label>
+            <input :value="form.cabang" readonly class="form-inp" />
           </div>
         </div>
 
-        <!-- Tanggal -->
-        <div class="field-row">
-          <label class="field-lbl">Tanggal</label>
-          <v-text-field
-            v-model="form.tanggal"
-            type="date"
-            density="compact"
-            variant="outlined"
-            hide-details
-          />
-        </div>
-
-        <!-- Account Header -->
-        <div class="field-row">
-          <label class="field-lbl">Account <span class="req">*</span></label>
-          <div class="d-flex gap-1">
-            <v-text-field
-              v-model="form.rek_kode"
-              density="compact"
-              variant="outlined"
-              hide-details
-              readonly
-              style="max-width: 110px"
-              placeholder="Kode"
-            />
-            <v-text-field
-              v-model="form.rek_nama"
-              density="compact"
-              variant="outlined"
-              hide-details
-              readonly
-              class="flex-1"
-              placeholder="Nama account"
-            />
-            <v-btn
-              size="small"
-              icon
-              variant="tonal"
-              @click="showAccountModal = true"
-            >
-              <IconSearch :size="15" :stroke-width="1.8" />
-            </v-btn>
-          </div>
-        </div>
-
-        <!-- Diterima Dari + Nota -->
-        <div class="d-flex gap-2">
-          <div class="field-row flex-1">
-            <label class="field-lbl">Diterima Dari</label>
-            <v-text-field
-              v-model="form.penerima"
-              density="compact"
-              variant="outlined"
-              hide-details
-              placeholder="Nama pemberi"
-            />
-          </div>
-          <div class="field-row flex-1">
-            <label class="field-lbl">No. Nota</label>
-            <v-text-field
-              v-model="form.nota"
-              density="compact"
-              variant="outlined"
-              hide-details
-              placeholder="No. nota"
-            />
-          </div>
-        </div>
-
-        <!-- Keterangan (free text, bukan dropdown) -->
-        <div class="field-row">
-          <label class="field-lbl">Keterangan</label>
-          <v-text-field
-            v-model="form.keterangan"
-            density="compact"
-            variant="outlined"
-            hide-details
-            placeholder="Keterangan penerimaan"
-          />
-        </div>
-
-        <!-- Cabang -->
-        <div class="field-row">
-          <label class="field-lbl">Cabang</label>
-          <v-text-field
-            :model-value="form.cabang"
-            density="compact"
-            variant="outlined"
-            hide-details
-            readonly
-          />
-        </div>
-
-        <!-- Total -->
-        <div class="total-box mt-3">
+        <!-- Total box -->
+        <div class="total-box">
           <span class="total-lbl">Total BKM</span>
           <span class="total-val">{{ fmt(totalBkm) }}</span>
         </div>
@@ -689,19 +647,50 @@ const confirmClose = () => {
 </template>
 
 <style scoped>
-.section-title {
-  font-size: 11px;
+/* ── Left column ── */
+.left-col-wrap {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 4px;
+}
+.form-section {
+  background: white;
+  border: 1px solid #c8e6c9;
+  border-radius: 8px;
+  border-top: 3px solid #2e7d32;
+  padding: 12px 14px;
+}
+.form-section-title {
+  font-size: 10px;
   font-weight: 700;
   color: #2e7d32;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   margin-bottom: 10px;
 }
+
+/* ── Field rows ── */
 .field-row {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  margin-bottom: 8px;
+  margin-bottom: 9px;
+}
+.field-row:last-child {
+  margin-bottom: 0;
+}
+.field-row-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+.field-row-2col .field-row {
+  margin-bottom: 0;
 }
 .field-lbl {
   font-size: 11px;
@@ -709,13 +698,89 @@ const confirmClose = () => {
   color: #4b5563;
 }
 .req {
-  color: red;
+  color: #e53935;
 }
-.flex-1 {
-  flex: 1 1 50%;
+
+/* ── Native inputs ── */
+.form-inp {
+  height: 30px;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  padding: 0 8px;
+  font-size: 11px;
+  outline: none;
+  background: white;
+  color: #111827;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+.form-inp:focus {
+  border-color: #2e7d32;
+  box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.1);
+}
+.form-inp:read-only {
+  background: #f9fafb;
+  color: #6b7280;
+}
+.form-inp.mono {
+  font-family: monospace;
+}
+
+/* ── Input with button ── */
+.input-with-btn {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.input-with-btn .form-inp {
+  flex: 1;
   min-width: 0;
 }
 
+/* ── Input with badge ── */
+.input-with-badge {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.input-with-badge .form-inp {
+  flex: 1;
+}
+.badge-info {
+  font-size: 10px;
+  font-weight: 700;
+  color: #f57c00;
+  background: #fff3e0;
+  border: 1px solid #ffcc80;
+  border-radius: 4px;
+  padding: 2px 7px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Icon button ── */
+.icon-btn {
+  width: 28px;
+  height: 30px;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4b5563;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.icon-btn:hover {
+  border-color: #2e7d32;
+  color: #2e7d32;
+  background: #f0fdf4;
+}
+
+/* ── Total box ── */
 .total-box {
   background: #1b5e20;
   border-radius: 8px;
@@ -736,6 +801,17 @@ const confirmClose = () => {
   font-variant-numeric: tabular-nums;
 }
 
+/* ── Section title right column ── */
+.section-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: #2e7d32;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+
+/* ── Detail table ── */
 .detail-table-wrap {
   flex: 1;
   overflow: auto;

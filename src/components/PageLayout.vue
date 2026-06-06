@@ -91,7 +91,7 @@ const loadingModel = computed({
   gap: 6px;
 }
 .modern-mode {
-  padding: 24px;
+  padding: 20px 24px;
   gap: 16px;
   min-height: calc(100vh - 52px);
 }
@@ -102,13 +102,16 @@ const loadingModel = computed({
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 8px;
   min-height: 36px;
+  flex-wrap: wrap; /* ← wrap jika actions terlalu banyak */
+  row-gap: 4px;
 }
 .page-title-section {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 .title-icon-wrap {
   display: flex;
@@ -117,8 +120,9 @@ const loadingModel = computed({
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  background: rgba(46, 125, 50, 0.1); /* primary hijau transparan */
+  background: rgba(46, 125, 50, 0.1);
   color: #2e7d32;
+  flex-shrink: 0;
 }
 .page-title {
   font-size: 0.95rem;
@@ -126,11 +130,14 @@ const loadingModel = computed({
   color: rgb(var(--v-theme-on-surface));
   margin: 0;
   letter-spacing: 0.01em;
+  white-space: nowrap;
 }
 .header-actions {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap; /* ← tombol bisa wrap */
+  flex-shrink: 1;
 }
 
 /* ── Content area ── */
@@ -144,7 +151,6 @@ const loadingModel = computed({
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   border-radius: 6px;
   overflow: hidden;
-  /* Garis aksen hijau di atas */
   border-top: 3px solid #2e7d32;
 }
 .content-wrapper {
@@ -161,5 +167,68 @@ const loadingModel = computed({
 .content-footer {
   flex-shrink: 0;
   border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+/* ── Responsif PageLayout ── */
+@media (max-width: 1280px) {
+  .desktop-mode {
+    padding: 6px 10px;
+    gap: 5px;
+  }
+  .page-title {
+    font-size: 0.88rem;
+  }
+  .title-icon-wrap {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .desktop-mode {
+    height: calc(100vh - 58px);
+    padding: 5px 8px;
+    gap: 4px;
+  }
+  .page-header {
+    min-height: 32px;
+    gap: 6px;
+  }
+  .page-title {
+    font-size: 0.85rem;
+  }
+  /* Tombol header lebih kecil */
+  .header-actions :deep(.v-btn) {
+    font-size: 11px !important;
+  }
+  .header-actions :deep(.v-btn .v-btn__content) {
+    gap: 2px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .desktop-mode {
+    height: calc(100vh - 52px);
+    padding: 4px 6px;
+    gap: 3px;
+  }
+  .modern-mode {
+    padding: 12px;
+    gap: 10px;
+  }
+  .page-header {
+    min-height: 28px;
+  }
+  .page-title {
+    font-size: 0.8rem;
+  }
+  .title-icon-wrap {
+    width: 22px;
+    height: 22px;
+  }
+  /* Sembunyikan teks tombol Tutup di mobile, sisakan ikon */
+  .header-actions :deep(.v-btn--variant-text span:not(.v-icon)) {
+    display: none;
+  }
 }
 </style>

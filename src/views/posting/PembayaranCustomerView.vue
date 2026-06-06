@@ -4,33 +4,34 @@ import { useRouter } from "vue-router";
 import { useToast } from "vue-toastification";
 import { isAuthExpiredError } from "@/api/axios";
 import BaseBrowse from "@/components/BaseBrowse.vue";
-import { bkmApi, type BkmRow, type BkmDetailRow } from "@/api/transaksi/bkmApi";
-import { exportBkm, exportBkmDetail } from "@/utils/exportExcel";
 import {
-  IconTransferIn,
-  IconPrinter,
-  IconFileSpreadsheet,
-} from "@tabler/icons-vue";
+  pembayaranCustomerApi,
+  type PembayaranCustomerRow,
+  type PembayaranCustomerDetailRow,
+} from "@/api/posting/pembayaranCustomerApi";
+import {
+  exportPembayaranCustomer,
+  exportPembayaranCustomerDetail,
+} from "@/utils/exportExcel";
+import { IconFileInvoice, IconFileSpreadsheet } from "@tabler/icons-vue";
 
 const router = useRouter();
 const toast = useToast();
-const MENU_ID = "23";
+const MENU_ID = "51";
 
 // ── Periode ───────────────────────────────────────────────────────────
-const STORAGE_KEY = "finance_periode_bkm";
+const STORAGE_KEY = "finance_periode_pembayaran_customer";
 
-// ← Definisikan getLocal DULU sebelum dipakai
 const getLocal = (d: Date) => {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${dd}`;
 };
-
-const getSavedPeriode = () => {
+const getSaved = () => {
   try {
-    const saved = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "null");
-    if (saved?.startDate && saved?.endDate) return saved;
+    const s = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "null");
+    if (s?.startDate && s?.endDate) return s;
   } catch {
     /* silent */
   }
@@ -39,49 +40,68 @@ const getSavedPeriode = () => {
 
 const now = new Date();
 const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-const saved = getSavedPeriode();
+const saved = getSaved();
 
-const startDate = ref(saved?.startDate ?? getLocal(firstDay));
-const endDate = ref(saved?.endDate ?? getLocal(now));
-
-watch([startDate, endDate], ([s, e]) => {
-  try {
-    sessionStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ startDate: s, endDate: e }),
-    );
-  } catch {
-    /* silent */
-  }
-  loadData();
+const filterState = ref({
+  startDate: saved?.startDate ?? getLocal(firstDay),
+  endDate: saved?.endDate ?? getLocal(now),
 });
 
+const startDate = computed({
+  get: () => filterState.value.startDate,
+  set: (v) => {
+    filterState.value = { ...filterState.value, startDate: v };
+  },
+});
+const endDate = computed({
+  get: () => filterState.value.endDate,
+  set: (v) => {
+    filterState.value = { ...filterState.value, endDate: v };
+  },
+});
+
+watch(
+  filterState,
+  (val) => {
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(val));
+    } catch {
+      /* silent */
+    }
+  },
+  { deep: true },
+);
+
+const filterValues = computed(() => ({ ...filterState.value }));
+
 // ── Data ──────────────────────────────────────────────────────────────
-const items = ref<BkmRow[]>([]);
-const detailItems = ref<BkmDetailRow[]>([]);
+const items = ref<PembayaranCustomerRow[]>([]);
+const detailItems = ref<PembayaranCustomerDetailRow[]>([]);
 const isLoading = ref(false);
-const selected = ref<BkmRow[]>([]);
+const selected = ref<PembayaranCustomerRow[]>([]);
 const expanded = ref<any[]>([]);
 
 const selectedItem = computed(() => selected.value[0] ?? null);
 
 // ── Headers ───────────────────────────────────────────────────────────
 const headers = [
-  { key: "Nomor", title: "Nomor", width: "170px" },
+  { key: "Nomor", title: "Nomor", width: "200px" },
+  { key: "Tipe", title: "Tipe", width: "60px", align: "center" as const },
+  { key: "Account", title: "Account", width: "100px" },
+  { key: "NamaAccount", title: "Nama Account", width: "220px" },
+  { key: "Rekening", title: "Rekening", width: "130px" },
   {
     key: "Tanggal",
     title: "Tanggal",
     width: "100px",
     align: "center" as const,
   },
-  { key: "Tipe", title: "Tipe", width: "60px", align: "center" as const },
-  { key: "Account", title: "Account", width: "200px" },
-  { key: "DiterimaDari", title: "Diterima Dari", width: "140px" },
-  { key: "Nota", title: "Nota", width: "80px" },
-  { key: "Keterangan", title: "Keterangan", width: "220px" },
-  { key: "Nominal", title: "Nominal", width: "130px", align: "right" as const },
-  { key: "Kasbon", title: "Kasbon", width: "160px" },
-  { key: "Closed", title: "Closed", width: "70px", align: "center" as const },
+  { key: "DiterimaDari", title: "Diterima Dari", width: "150px" },
+  { key: "Nota", title: "Nota", width: "120px" },
+  { key: "Keterangan", title: "Keterangan", width: "280px" },
+  { key: "Nominal", title: "Nominal", width: "140px", align: "right" as const },
+  { key: "Cabang", title: "Cabang", width: "70px", align: "center" as const },
+  { key: "Closed", title: "Closed", width: "80px", align: "center" as const },
 ];
 
 // ── Load ──────────────────────────────────────────────────────────────
@@ -91,8 +111,14 @@ const loadData = async () => {
   expanded.value = [];
   try {
     const [master, detail] = await Promise.all([
-      bkmApi.getBrowse(startDate.value, endDate.value),
-      bkmApi.getBrowseDetail(startDate.value, endDate.value),
+      pembayaranCustomerApi.getBrowse(
+        filterState.value.startDate,
+        filterState.value.endDate,
+      ),
+      pembayaranCustomerApi.getBrowseDetail(
+        filterState.value.startDate,
+        filterState.value.endDate,
+      ),
     ]);
     items.value = master;
     detailItems.value = detail;
@@ -109,55 +135,21 @@ onMounted(loadData);
 const getDetail = (nomor: string) =>
   detailItems.value.filter((d) => d.Nomor === nomor);
 
-// ── Validasi ──────────────────────────────────────────────────────────
-const validateAction = (action: "ubah" | "hapus" | "cetak"): boolean => {
-  if (!selectedItem.value) {
-    toast.warning("Pilih data terlebih dahulu.");
-    return false;
-  }
-  const r = selectedItem.value;
-  if (r.Kasbon && action === "ubah") {
-    toast.warning("BKM terbentuk otomatis dari kasbon. Tidak bisa diubah.");
-    return false;
-  }
-  if (r.Kasbon && action === "hapus") {
-    toast.warning("BKM terbentuk otomatis dari kasbon. Tidak bisa dihapus.");
-    return false;
-  }
-  if (r.Kasbon && action === "cetak") {
-    toast.warning("BKM dari kasbon. Silahkan cetak di Penyelesaian Kasbon.");
-    return false;
-  }
-  if (r.Closed === "Sudah" && action !== "cetak") {
-    toast.warning("Transaksi sudah diclose. Tidak bisa diubah/dihapus.");
-    return false;
-  }
-  return true;
-};
-
-// ── Aksi ──────────────────────────────────────────────────────────────
-const onBaru = () => router.push({ name: "BkmCreate" });
-const onUbah = () => {
-  if (!validateAction("ubah")) return;
-  router.push({
-    name: "BkmEdit",
-    params: { nomor: encodeURIComponent(selectedItem.value!.Nomor) },
-  });
-};
-const onCetak = () => {
-  if (!validateAction("cetak")) return;
-  window.open(
-    `/transaksi/bkm/print/${encodeURIComponent(selectedItem.value!.Nomor)}`,
-    "_blank",
-  );
-};
-
 // ── Hapus ─────────────────────────────────────────────────────────────
+// Delphi: cek Closed="Sudah" → tolak (di backend), confirm → delete
 const showDeleteDialog = ref(false);
 const isDeleting = ref(false);
 
 const onHapus = () => {
-  if (!validateAction("hapus")) return;
+  if (!selectedItem.value) {
+    toast.warning("Pilih data terlebih dahulu.");
+    return;
+  }
+  // Delphi: jika Closed="Sudah" → warning langsung di frontend juga
+  if (selectedItem.value.Closed === "Sudah") {
+    toast.error("Transaksi tersebut sudah diclose. Tidak bisa dihapus.");
+    return;
+  }
   showDeleteDialog.value = true;
 };
 
@@ -165,7 +157,7 @@ const confirmDelete = async () => {
   if (!selectedItem.value) return;
   isDeleting.value = true;
   try {
-    await bkmApi.delete(selectedItem.value.Nomor);
+    await pembayaranCustomerApi.delete(selectedItem.value.Nomor);
     toast.success("Data berhasil dihapus.");
     showDeleteDialog.value = false;
     await loadData();
@@ -177,27 +169,36 @@ const confirmDelete = async () => {
   }
 };
 
-// ── Export ────────────────────────────────────────────────────────────
-const doExport = () => exportBkm(items.value, startDate.value, endDate.value);
-const doExportDetail = () =>
-  exportBkmDetail(detailItems.value, startDate.value, endDate.value);
-
-// ── Row props ─────────────────────────────────────────────────────────
-const rowPropsFn = (data: any) => {
-  const row = data.item?.raw || data.item;
-  let cls = "";
-  if (row.Kasbon) cls += " row-kasbon";
-  if (row.Closed === "Sudah") cls += " row-closed";
-  return { class: cls.trim() };
+// ── Posting ───────────────────────────────────────────────────────────
+const onPosting = () => {
+  router.push({ name: "PembayaranCustomerForm" });
 };
+
+// ── Export ────────────────────────────────────────────────────────────
+const doExport = () =>
+  exportPembayaranCustomer(
+    items.value,
+    filterState.value.startDate,
+    filterState.value.endDate,
+  );
+const doExportDetail = () =>
+  exportPembayaranCustomerDetail(
+    detailItems.value,
+    filterState.value.startDate,
+    filterState.value.endDate,
+  );
+
+// ── Row props — merah jika Closed=Belum ───────────────────────────────
+// Delphi: cxStyle1 saat jur_close=0
+const rowPropsFn = (_data: any) => ({});
 
 const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
 </script>
 
 <template>
   <BaseBrowse
-    title="Bukti Kas Masuk (BKM)"
-    :icon="IconTransferIn"
+    title="Posting Pembayaran Customer"
+    :icon="IconFileInvoice"
     :menu-id="MENU_ID"
     :headers="headers"
     :items="items"
@@ -209,11 +210,12 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
     item-value="Nomor"
     v-model:selected="selected"
     :row-props-fn="rowPropsFn"
-    summary-key="Nominal"
-    summary-label="Total Nominal"
+    :summary-key="'Nominal'"
+    :summary-label="'Total Nominal'"
+    :filter-values="filterValues"
     @refresh="loadData"
   >
-    <!-- ── Filter periode ── -->
+    <!-- ── Filter ── -->
     <template #filter-left>
       <div class="filter-group">
         <span class="filter-lbl">Periode</span>
@@ -225,34 +227,20 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
 
     <!-- ── Tombol aksi ── -->
     <template #extra-actions>
-      <v-btn size="small" color="primary" variant="flat" @click="onBaru"
-        >+ Baru</v-btn
-      >
-      <v-btn
-        size="small"
-        variant="outlined"
-        :disabled="!selectedItem"
-        @click="onUbah"
-        >Ubah</v-btn
-      >
+      <v-btn size="small" color="primary" variant="flat" @click="onPosting">
+        <template #prepend
+          ><IconFileInvoice :size="13" :stroke-width="1.8"
+        /></template>
+        Posting
+      </v-btn>
       <v-btn
         size="small"
         color="error"
         variant="tonal"
         :disabled="!selectedItem"
         @click="onHapus"
-        >Hapus</v-btn
       >
-      <v-btn
-        size="small"
-        variant="tonal"
-        :disabled="!selectedItem"
-        @click="onCetak"
-      >
-        <template #prepend
-          ><IconPrinter :size="13" :stroke-width="1.8"
-        /></template>
-        Cetak
+        Hapus
       </v-btn>
       <v-btn size="small" variant="tonal" color="success" @click="doExport">
         <template #prepend
@@ -268,18 +256,9 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
       </v-btn>
     </template>
 
-    <!-- ── Custom cell: Nominal ── -->
+    <!-- ── Custom cell Nominal ── -->
     <template #item.Nominal="{ value }">
-      <span style="font-variant-numeric: tabular-nums">{{
-        fmt(Number(value))
-      }}</span>
-    </template>
-
-    <!-- ── Custom cell: Closed badge ── -->
-    <template #item.Closed="{ value }">
-      <span :class="value === 'Sudah' ? 'badge-closed' : 'badge-open'">{{
-        value
-      }}</span>
+      <span class="tr">{{ fmt(value) }}</span>
     </template>
 
     <!-- ── Expanded detail ── -->
@@ -289,15 +268,15 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
           <thead>
             <tr>
               <th style="width: 40px">No</th>
-              <th style="min-width: 280px">Uraian</th>
+              <th style="min-width: 300px">Uraian</th>
               <th style="width: 130px">Nominal</th>
-              <th style="width: 100px">Account</th>
-              <th style="min-width: 180px">Nama Account</th>
-              <th style="min-width: 120px">Detail CC</th>
+              <th style="width: 90px">Account</th>
+              <th style="min-width: 200px">Nama Account</th>
+              <th style="min-width: 140px">Detail CC</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="d in getDetail(item.Nomor)" :key="d.No">
+            <tr v-for="(d, idx) in getDetail(item.Nomor)" :key="idx">
               <td class="tc">{{ d.No }}</td>
               <td>{{ d.Uraian }}</td>
               <td class="tr">{{ fmt(d.Nominal) }}</td>
@@ -315,6 +294,22 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
               </td>
             </tr>
           </tbody>
+          <tfoot v-if="getDetail(item.Nomor).length">
+            <tr class="detail-foot">
+              <td colspan="2" class="tr detail-foot-lbl">Total</td>
+              <td class="tr detail-foot-val">
+                {{
+                  fmt(
+                    getDetail(item.Nomor).reduce(
+                      (s, d) => s + Number(d.Nominal),
+                      0,
+                    ),
+                  )
+                }}
+              </td>
+              <td colspan="3"></td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     </template>
@@ -326,11 +321,9 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
       <v-card-title class="text-body-1 font-weight-bold pa-4"
         >Konfirmasi Hapus</v-card-title
       >
-      <v-card-text class="pa-4 pt-0">
+      <v-card-text class="pa-4 pt-0" style="font-size: 12px">
         Yakin ingin menghapus <strong>{{ selectedItem?.Nomor }}</strong
-        >? <br /><small style="color: #c62828"
-          >Jurnal otomatis terkait juga akan dihapus.</small
-        >
+        >? Tindakan ini tidak dapat dibatalkan.
       </v-card-text>
       <v-card-actions class="pa-4">
         <v-spacer />
@@ -349,12 +342,10 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
 </template>
 
 <style scoped>
-/* Filter */
 .filter-group {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: wrap;
 }
 .filter-lbl {
   font-size: 12px;
@@ -379,39 +370,6 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
 .date-inp:focus {
   border-color: #2e7d32;
 }
-.tc {
-  text-align: center;
-}
-.tr {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-:deep(.row-kasbon td) {
-  color: #1565c0 !important;
-  font-weight: 600;
-}
-:deep(.row-closed td) {
-  color: #9e9e9e !important;
-}
-
-.badge-closed {
-  background: #e0e0e0;
-  color: #616161;
-  padding: 1px 8px;
-  border-radius: 10px;
-  font-size: 10px;
-  font-weight: 700;
-}
-.badge-open {
-  background: #e8f5e9;
-  color: #2e7d32;
-  padding: 1px 8px;
-  border-radius: 10px;
-  font-size: 10px;
-  font-weight: 700;
-}
-
 .detail-wrap {
   padding: 4px 0;
 }
@@ -426,15 +384,38 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
 .detail-tbl th {
   color: white;
   font-weight: 700;
-  padding: 4px 8px;
+  padding: 4px 6px;
   white-space: nowrap;
   text-align: left;
 }
 .detail-tbl td {
-  padding: 3px 8px;
+  padding: 3px 6px;
   border-bottom: 1px solid #f0f0f0;
 }
 .detail-tbl tbody tr:hover td {
   background: rgba(46, 125, 50, 0.05);
+}
+.detail-foot td {
+  background: #f0fdf4;
+  border-top: 2px solid #2e7d32;
+  padding: 4px 6px;
+}
+.detail-foot-lbl {
+  font-size: 11px;
+  font-weight: 700;
+  color: #374151;
+}
+.detail-foot-val {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1b5e20;
+  font-variant-numeric: tabular-nums;
+}
+.tc {
+  text-align: center;
+}
+.tr {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 </style>

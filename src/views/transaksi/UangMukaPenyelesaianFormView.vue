@@ -526,170 +526,136 @@ const rowClass = (d: PenyelesaianDetail) => {
   >
     <!-- ── LEFT COLUMN ── -->
     <template #left-column>
-      <div
-        class="desktop-form-section header-section"
-        style="
-          height: 100%;
-          overflow-y: auto;
-          overflow-x: hidden;
-          padding-right: 6px;
-        "
-      >
-        <div class="section-title">Info Kasbon</div>
+      <div class="left-col-wrap">
+        <!-- Info Kasbon -->
+        <div class="form-section">
+          <div class="form-section-title">Info Kasbon</div>
 
-        <div class="field-row">
-          <label class="field-lbl">No. Kasbon</label>
-          <v-text-field
-            :model-value="form.nomor"
-            density="compact"
-            variant="outlined"
-            hide-details
-            readonly
-          />
-        </div>
-
-        <!-- Tgl Kasbon + Jenis side by side -->
-        <div class="d-flex gap-2">
-          <div class="field-row flex-1">
-            <label class="field-lbl">Tgl Kasbon</label>
-            <v-text-field
-              :model-value="form.tanggal"
-              density="compact"
-              variant="outlined"
-              hide-details
-              readonly
-            />
+          <div class="field-row">
+            <label class="field-lbl">No. Kasbon</label>
+            <input :value="form.nomor" readonly class="form-inp mono" />
           </div>
-          <div class="field-row flex-1">
-            <label class="field-lbl">Jenis</label>
-            <v-text-field
-              :model-value="form.jenis"
-              density="compact"
-              variant="outlined"
-              hide-details
-              readonly
-            />
+
+          <div class="field-row-2col">
+            <div class="field-row">
+              <label class="field-lbl">Tgl Kasbon</label>
+              <input
+                :value="form.tanggal"
+                readonly
+                class="form-inp"
+                type="date"
+              />
+            </div>
+            <div class="field-row">
+              <label class="field-lbl">Jenis</label>
+              <input :value="form.jenis" readonly class="form-inp" />
+            </div>
           </div>
         </div>
 
-        <div class="section-title mt-3">Info BKK/BBK</div>
+        <!-- Info BKK/BBK -->
+        <div class="form-section">
+          <div class="form-section-title">Info BKK / BBK</div>
 
-        <div class="d-flex gap-2">
-          <div class="field-row flex-1">
-            <label class="field-lbl">No. BKK/BBK</label>
-            <v-text-field
-              :model-value="form.no_bkk || '(Otomatis)'"
-              density="compact"
-              variant="outlined"
-              hide-details
-              readonly
+          <div class="field-row-2col">
+            <div class="field-row">
+              <label class="field-lbl">No. BKK/BBK</label>
+              <input
+                :value="form.no_bkk || '(Otomatis)'"
+                readonly
+                class="form-inp mono"
+              />
+            </div>
+            <div class="field-row">
+              <label class="field-lbl">Tgl Penyelesaian</label>
+              <input v-model="form.tgl_bkk" type="date" class="form-inp" />
+            </div>
+          </div>
+
+          <!-- Account -->
+          <div class="field-row">
+            <label class="field-lbl">Account <span class="req">*</span></label>
+            <div class="input-with-btn">
+              <input
+                :value="form.rek_kode"
+                readonly
+                class="form-inp mono"
+                style="width: 100px; flex-shrink: 0"
+                placeholder="Kode"
+              />
+              <input
+                :value="form.rek_nama"
+                readonly
+                class="form-inp"
+                placeholder="Nama account"
+              />
+              <button
+                class="icon-btn"
+                type="button"
+                @click="showAccountModal = true"
+              >
+                <IconSearch :size="13" :stroke-width="1.8" />
+              </button>
+            </div>
+          </div>
+
+          <div class="field-row-2col">
+            <div class="field-row">
+              <label class="field-lbl">Penerima</label>
+              <input
+                v-model="form.penerima"
+                class="form-inp"
+                placeholder="Penerima"
+              />
+            </div>
+            <div class="field-row">
+              <label class="field-lbl">No. Nota</label>
+              <input
+                v-model="form.nota"
+                class="form-inp"
+                placeholder="No. nota"
+              />
+            </div>
+          </div>
+
+          <div class="field-row">
+            <label class="field-lbl">Keterangan</label>
+            <input
+              v-model="form.keterangan"
+              class="form-inp"
+              placeholder="Keterangan"
             />
           </div>
-          <div class="field-row flex-1">
-            <label class="field-lbl">Tgl Penyelesaian</label>
-            <v-text-field
-              v-model="form.tgl_bkk"
-              type="date"
-              density="compact"
-              variant="outlined"
-              hide-details
+
+          <div class="field-row">
+            <label class="field-lbl">No. Pengajuan</label>
+            <input
+              :value="form.pjh_nomor"
+              readonly
+              class="form-inp mono"
+              placeholder="-"
             />
           </div>
         </div>
 
-        <div class="field-row">
-          <label class="field-lbl">Account <span class="req">*</span></label>
-          <div class="d-flex gap-1">
-            <v-text-field
-              v-model="form.rek_kode"
-              density="compact"
-              variant="outlined"
-              hide-details
-              readonly
-              style="max-width: 110px"
-              placeholder="Kode"
-            />
-            <v-text-field
-              v-model="form.rek_nama"
-              density="compact"
-              variant="outlined"
-              hide-details
-              readonly
-              class="flex-1"
-              placeholder="Nama account"
-            />
-            <v-btn
-              size="small"
-              icon
-              variant="tonal"
-              @click="showAccountModal = true"
+        <!-- Info Permintaan -->
+        <div v-if="form.info_permintaan" class="form-section">
+          <div class="form-section-header">
+            <div class="form-section-title" style="margin-bottom: 0">
+              Info Permintaan
+            </div>
+            <button
+              class="link-btn"
+              type="button"
+              @click="showPermintaanDialog = true"
             >
-              <IconSearch :size="15" :stroke-width="1.8" />
-            </v-btn>
+              Lihat Detail
+            </button>
           </div>
-        </div>
-
-        <div class="d-flex gap-2">
-          <div class="field-row flex-1">
-            <label class="field-lbl">Penerima</label>
-            <v-text-field
-              v-model="form.penerima"
-              density="compact"
-              variant="outlined"
-              hide-details
-            />
+          <div class="pmt-info">
+            <span class="pmt-nomor">{{ form.info_permintaan.pmt_nomor }}</span>
+            <span class="pmt-nama">{{ form.info_permintaan.nama }}</span>
           </div>
-          <div class="field-row flex-1">
-            <label class="field-lbl">No. Nota</label>
-            <v-text-field
-              v-model="form.nota"
-              density="compact"
-              variant="outlined"
-              hide-details
-            />
-          </div>
-        </div>
-        <div class="field-row">
-          <label class="field-lbl">Keterangan</label>
-          <v-text-field
-            v-model="form.keterangan"
-            density="compact"
-            variant="outlined"
-            hide-details
-          />
-        </div>
-        <div class="field-row">
-          <label class="field-lbl">No. Pengajuan</label>
-          <v-text-field
-            :model-value="form.pjh_nomor"
-            density="compact"
-            variant="outlined"
-            hide-details
-            readonly
-          />
-        </div>
-
-        <!-- Info permintaan -->
-        <div
-          v-if="form.info_permintaan"
-          class="d-flex align-center justify-space-between mt-3 mb-1"
-        >
-          <div class="section-title" style="margin-bottom: 0">
-            Info Permintaan
-          </div>
-          <v-btn
-            size="x-small"
-            variant="tonal"
-            color="primary"
-            @click="showPermintaanDialog = true"
-            >Lihat Detail</v-btn
-          >
-        </div>
-        <div
-          v-if="form.info_permintaan"
-          style="font-size: 11px; color: #555; margin-bottom: 8px"
-        >
-          {{ form.info_permintaan.pmt_nomor }} — {{ form.info_permintaan.nama }}
         </div>
       </div>
     </template>
@@ -1233,29 +1199,155 @@ const rowClass = (d: PenyelesaianDetail) => {
 </template>
 
 <style scoped>
-.section-title {
-  font-size: 11px;
+/* ── Left column ── */
+.left-col-wrap {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 4px;
+}
+.form-section {
+  background: white;
+  border: 1px solid #c8e6c9;
+  border-radius: 8px;
+  border-top: 3px solid #2e7d32;
+  padding: 12px 14px;
+}
+.form-section-title {
+  font-size: 10px;
   font-weight: 700;
   color: #2e7d32;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   margin-bottom: 10px;
 }
+.form-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+/* ── Field rows ── */
 .field-row {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  margin-bottom: 8px;
+  margin-bottom: 9px;
 }
+.field-row:last-child {
+  margin-bottom: 0;
+}
+.field-row-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+.field-row-2col .field-row {
+  margin-bottom: 0;
+}
+
 .field-lbl {
   font-size: 11px;
   font-weight: 600;
   color: #4b5563;
 }
 .req {
-  color: red;
+  color: #e53935;
 }
 
+/* ── Native inputs ── */
+.form-inp {
+  height: 30px;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  padding: 0 8px;
+  font-size: 11px;
+  outline: none;
+  background: white;
+  color: #111827;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+.form-inp:focus {
+  border-color: #2e7d32;
+  box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.1);
+}
+.form-inp:read-only {
+  background: #f9fafb;
+  color: #6b7280;
+}
+.form-inp.mono {
+  font-family: monospace;
+}
+
+/* ── Input with button ── */
+.input-with-btn {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.input-with-btn .form-inp {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Icon button ── */
+.icon-btn {
+  width: 28px;
+  height: 30px;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4b5563;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.icon-btn:hover {
+  border-color: #2e7d32;
+  color: #2e7d32;
+  background: #f0fdf4;
+}
+
+/* ── Link button ── */
+.link-btn {
+  background: none;
+  border: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: #2e7d32;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+/* ── Permintaan info ── */
+.pmt-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pmt-nomor {
+  font-size: 11px;
+  font-weight: 700;
+  color: #2e7d32;
+  font-family: monospace;
+}
+.pmt-nama {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+/* ── Detail table ── */
 .detail-table-wrap {
   flex: 1;
   overflow: auto;
@@ -1348,6 +1440,7 @@ const rowClass = (d: PenyelesaianDetail) => {
   padding: 2px;
 }
 
+/* ── Footer ── */
 .detail-footer {
   border-top: 2px solid #2e7d32;
   padding: 8px 4px 4px;
@@ -1375,6 +1468,7 @@ const rowClass = (d: PenyelesaianDetail) => {
   text-align: right;
 }
 
+/* ── Info grid dialog ── */
 .info-grid {
   display: grid;
   grid-template-columns: 130px 1fr;
@@ -1389,8 +1483,13 @@ const rowClass = (d: PenyelesaianDetail) => {
   color: #111827;
 }
 
-.flex-1 {
-  flex: 1 1 50%;
-  min-width: 0;
+/* ── Section title right column ── */
+.section-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: #2e7d32;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
 }
 </style>

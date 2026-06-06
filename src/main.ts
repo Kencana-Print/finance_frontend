@@ -10,6 +10,9 @@ import vuetify from "./plugins/vuetify";
 import "./assets/main.css";
 import "vue-toastification/dist/index.css";
 
+import "pivottable/dist/pivot.css";
+import "jquery-ui-dist/jquery-ui.css";
+
 const app = createApp(App);
 const pinia = createPinia();
 

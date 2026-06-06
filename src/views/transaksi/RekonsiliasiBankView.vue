@@ -37,6 +37,7 @@ watch(tanggal, (v) => {
   } catch {
     /* silent */
   }
+  loadData();
 });
 
 // ── Data ──────────────────────────────────────────────────────────────
@@ -347,12 +348,9 @@ const doExport = () => exportRekonsiliasiBank(items.value, tanggal.value);
     @refresh="loadData"
   >
     <template #filter-left>
-      <div class="d-flex align-center gap-2 flex-wrap">
+      <div class="filter-group">
         <span class="filter-lbl">Per Tanggal</span>
         <input v-model="tanggal" type="date" class="date-inp" />
-        <v-btn size="small" color="primary" variant="tonal" @click="loadData">
-          Tampilkan
-        </v-btn>
       </div>
     </template>
 
@@ -840,6 +838,12 @@ const doExport = () => exportRekonsiliasiBank(items.value, tanggal.value);
 </template>
 
 <style scoped>
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap; /* Mencegah overflow jika layar menyempit */
+}
 .filter-lbl {
   font-size: 12px;
   font-weight: 600;
@@ -853,6 +857,7 @@ const doExport = () => exportRekonsiliasiBank(items.value, tanggal.value);
   padding: 0 8px;
   font-size: 12px;
   outline: none;
+  width: 130px;
 }
 .date-inp:focus {
   border-color: #2e7d32;

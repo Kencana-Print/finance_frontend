@@ -12,23 +12,37 @@ interface UseBrowseOptions<T> {
 
 export function useBrowse<T = any>(options: UseBrowseOptions<T>) {
   const authStore = useAuthStore();
-  const toast     = useToast();
+  const toast = useToast();
 
-  const items     = ref<T[]>([]) as ReturnType<typeof ref<T[]>>;
+  const items = ref<T[]>([]) as ReturnType<typeof ref<T[]>>;
   const isLoading = ref(false);
-  const selected  = ref<T[]>([]);
+  const selected = ref<T[]>([]);
 
-  const canView   = computed(() => authStore.can(options.menuId, "view"));
-  const canInsert = computed(() => authStore.can(options.menuId, "insert"));
-  const canEdit   = computed(() => authStore.can(options.menuId, "edit"));
-  const canDelete = computed(() => authStore.can(options.menuId, "delete"));
-  const canPrint  = computed(() => authStore.can(options.menuId, "print"));
-  const canExport = computed(() => authStore.can(options.menuId, "view"));
+  const canView = computed(
+    () => !options.menuId || authStore.can(options.menuId, "view"),
+  );
+  const canInsert = computed(
+    () => !options.menuId || authStore.can(options.menuId, "insert"),
+  );
+  const canEdit = computed(
+    () => !options.menuId || authStore.can(options.menuId, "edit"),
+  );
+  const canDelete = computed(
+    () => !options.menuId || authStore.can(options.menuId, "delete"),
+  );
+  const canPrint = computed(
+    () => !options.menuId || authStore.can(options.menuId, "print"),
+  );
+  const canExport = computed(
+    () => !options.menuId || authStore.can(options.menuId, "view"),
+  );
 
   const isSingleSelected = computed(() => selected.value.length === 1);
-  const selectedItem     = computed(() => selected.value[0] || null);
+  const selectedItem = computed(() => selected.value[0] || null);
 
-  const clearSelection = () => { selected.value = []; };
+  const clearSelection = () => {
+    selected.value = [];
+  };
 
   const fetchData = async () => {
     if (!canView.value) {
@@ -86,9 +100,20 @@ export function useBrowse<T = any>(options: UseBrowseOptions<T>) {
   });
 
   return {
-    items, isLoading, selected,
-    canView, canInsert, canEdit, canDelete, canPrint, canExport,
-    isSingleSelected, selectedItem,
-    fetchData, clearSelection, deleteData, exportToExcel,
+    items,
+    isLoading,
+    selected,
+    canView,
+    canInsert,
+    canEdit,
+    canDelete,
+    canPrint,
+    canExport,
+    isSingleSelected,
+    selectedItem,
+    fetchData,
+    clearSelection,
+    deleteData,
+    exportToExcel,
   };
 }

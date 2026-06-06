@@ -15,6 +15,8 @@ const showPass = ref(false);
 const isLoading = ref(false);
 const usernameRef = ref<any>(null);
 
+const appVersion = __APP_VERSION__;
+
 // Referensi uLogin.pas: FormShow → set focus ke edtUser saat tampil
 onMounted(() => {
   setTimeout(() => usernameRef.value?.focus(), 100);
@@ -95,7 +97,7 @@ const onUsernameEnter = () => {
           </div>
         </div>
 
-        <div class="brand-version">v1.0.0</div>
+        <div class="brand-version">v{{ appVersion }}</div>
       </div>
 
       <!-- Right panel — form login -->

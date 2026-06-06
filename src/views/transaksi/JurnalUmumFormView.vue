@@ -241,61 +241,41 @@ const confirmClose = () => {
   >
     <!-- ── LEFT COLUMN ── -->
     <template #left-column>
-      <div style="height: 100%; overflow-y: auto; padding-right: 6px">
-        <div class="section-title">Informasi Jurnal</div>
+      <div class="left-col-wrap">
+        <div class="form-section">
+          <div class="form-section-title">Informasi Jurnal</div>
 
-        <!-- Nomor -->
-        <div class="field-row">
-          <label class="field-lbl">Nomor Jurnal</label>
-          <div class="d-flex align-center gap-2">
-            <v-text-field
-              :model-value="isEdit ? form.nomor : ''"
-              density="compact"
-              variant="outlined"
-              hide-details
-              readonly
-              :placeholder="isEdit ? '' : 'Otomatis'"
-            />
-            <span
-              v-if="!isEdit"
-              style="
-                font-size: 11px;
-                color: #f57c00;
-                font-weight: 600;
-                white-space: nowrap;
-              "
+          <div class="field-row">
+            <label class="field-lbl">Nomor Jurnal</label>
+            <div class="input-with-badge">
+              <input
+                :value="isEdit ? form.nomor : ''"
+                readonly
+                class="form-inp mono"
+                :placeholder="isEdit ? '' : 'Otomatis'"
+              />
+              <span v-if="!isEdit" class="badge-info">Auto</span>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <label class="field-lbl">Tanggal</label>
+            <input v-model="form.tanggal" type="date" class="form-inp" />
+          </div>
+
+          <div class="field-row">
+            <label class="field-lbl"
+              >Keterangan <span class="req">*</span></label
             >
-              Baru = Otomatis
-            </span>
+            <input
+              v-model="form.keterangan"
+              class="form-inp"
+              placeholder="Keterangan jurnal"
+            />
           </div>
         </div>
 
-        <!-- Tanggal -->
-        <div class="field-row">
-          <label class="field-lbl">Tanggal</label>
-          <v-text-field
-            v-model="form.tanggal"
-            type="date"
-            density="compact"
-            variant="outlined"
-            hide-details
-          />
-        </div>
-
-        <!-- Keterangan -->
-        <div class="field-row">
-          <label class="field-lbl">Keterangan <span class="req">*</span></label>
-          <v-text-field
-            v-model="form.keterangan"
-            density="compact"
-            variant="outlined"
-            hide-details
-            placeholder="Keterangan jurnal"
-          />
-        </div>
-
-        <!-- Total Debet & Kredit -->
-        <div class="total-wrap mt-4">
+        <div class="total-wrap mt-2">
           <div class="total-row">
             <span class="total-lbl">Total Debet</span>
             <span class="total-val">{{ fmt(totalDebet) }}</span>
@@ -531,19 +511,41 @@ const confirmClose = () => {
 </template>
 
 <style scoped>
-.section-title {
-  font-size: 11px;
+/* ── Left column ── */
+.left-col-wrap {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 4px;
+}
+.form-section {
+  background: white;
+  border: 1px solid #c8e6c9;
+  border-radius: 8px;
+  border-top: 3px solid #2e7d32;
+  padding: 12px 14px;
+}
+.form-section-title {
+  font-size: 10px;
   font-weight: 700;
   color: #2e7d32;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   margin-bottom: 10px;
 }
+
+/* ── Field rows ── */
 .field-row {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  margin-bottom: 8px;
+  margin-bottom: 9px;
+}
+.field-row:last-child {
+  margin-bottom: 0;
 }
 .field-lbl {
   font-size: 11px;
@@ -551,9 +553,57 @@ const confirmClose = () => {
   color: #4b5563;
 }
 .req {
-  color: red;
+  color: #e53935;
 }
 
+/* ── Native inputs ── */
+.form-inp {
+  height: 30px;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  padding: 0 8px;
+  font-size: 11px;
+  outline: none;
+  background: white;
+  color: #111827;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+.form-inp:focus {
+  border-color: #2e7d32;
+  box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.1);
+}
+.form-inp:read-only {
+  background: #f9fafb;
+  color: #6b7280;
+}
+.form-inp.mono {
+  font-family: monospace;
+}
+
+/* ── Input with badge ── */
+.input-with-badge {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.input-with-badge .form-inp {
+  flex: 1;
+}
+.badge-info {
+  font-size: 10px;
+  font-weight: 700;
+  color: #f57c00;
+  background: #fff3e0;
+  border: 1px solid #ffcc80;
+  border-radius: 4px;
+  padding: 2px 7px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Summary Box ── */
 .total-wrap {
   background: #f9fafb;
   border: 1px solid #e5e7eb;
@@ -598,6 +648,15 @@ const confirmClose = () => {
   font-style: italic;
 }
 
+/* ── Right Column Table ── */
+.section-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: #2e7d32;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
 .detail-table-wrap {
   flex: 1;
   overflow: auto;

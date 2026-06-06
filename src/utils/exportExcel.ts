@@ -2171,3 +2171,1679 @@ export const exportTerimaSetoranDetail = async (
     `TerimaSetoran_Detail_${startDate}_sd_${endDate}.xlsx`,
   );
 };
+
+export const exportPembayaranCustomer = async (
+  items: any[],
+  startDate: string,
+  endDate: string,
+) => {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Pembayaran Customer");
+
+  const borderAll: Partial<ExcelJS.Borders> = {
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" },
+  };
+  const headerFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF2E7D32" },
+  };
+  const headerFont: Partial<ExcelJS.Font> = {
+    bold: true,
+    color: { argb: "FFFFFFFF" },
+    size: 10,
+  };
+  const setH = (cell: ExcelJS.Cell, val: string) => {
+    cell.value = val;
+    cell.font = headerFont;
+    cell.fill = headerFill;
+    cell.border = borderAll;
+    cell.alignment = {
+      vertical: "middle",
+      horizontal: "center",
+      wrapText: true,
+    };
+  };
+  const setC = (
+    cell: ExcelJS.Cell,
+    val: any,
+    align: "left" | "center" | "right" = "left",
+  ) => {
+    cell.value = val;
+    cell.border = borderAll;
+    cell.font = { size: 10 };
+    cell.alignment = { vertical: "middle", horizontal: align };
+  };
+  const setN = (cell: ExcelJS.Cell, val: number) => {
+    cell.value = Number(val) || 0;
+    cell.border = borderAll;
+    cell.font = { size: 10 };
+    cell.numFmt = "#,##0";
+    cell.alignment = { vertical: "middle", horizontal: "right" };
+  };
+
+  ws.mergeCells("A1:L1");
+  ws.getCell("A1").value = "Posting Pembayaran Customer";
+  ws.getCell("A1").font = { bold: true, size: 12 };
+  ws.mergeCells("A2:L2");
+  ws.getCell("A2").value = `Periode : ${startDate} s/d ${endDate}`;
+  ws.getCell("A2").font = { size: 10 };
+  ws.addRow([]);
+
+  const cols = [
+    "Nomor",
+    "Tipe",
+    "Account",
+    "Nama Account",
+    "Rekening",
+    "Tanggal",
+    "Diterima Dari",
+    "Nota",
+    "Keterangan",
+    "Nominal",
+    "Cabang",
+    "Closed",
+  ];
+  const hRow = ws.addRow(cols);
+  hRow.eachCell((cell, i) => setH(cell, cols[i - 1]));
+  hRow.height = 20;
+
+  for (const r of items) {
+    const row = ws.addRow([]);
+    setC(row.getCell(1), r.Nomor);
+    setC(row.getCell(2), r.Tipe, "center");
+    setC(row.getCell(3), r.Account);
+    setC(row.getCell(4), r.NamaAccount);
+    setC(row.getCell(5), r.Rekening);
+    setC(row.getCell(6), r.Tanggal, "center");
+    setC(row.getCell(7), r.DiterimaDari);
+    setC(row.getCell(8), r.Nota);
+    setC(row.getCell(9), r.Keterangan);
+    setN(row.getCell(10), r.Nominal);
+    setC(row.getCell(11), r.Cabang, "center");
+    setC(row.getCell(12), r.Closed, "center");
+    if (r.Closed === "Belum") {
+      for (let c = 1; c <= 12; c++)
+        row.getCell(c).font = {
+          size: 10,
+          color: { argb: "FFCC0000" },
+          bold: true,
+        };
+    }
+    row.height = 16;
+  }
+
+  ws.getColumn(1).width = 20;
+  ws.getColumn(2).width = 8;
+  ws.getColumn(3).width = 12;
+  ws.getColumn(4).width = 28;
+  ws.getColumn(5).width = 16;
+  ws.getColumn(6).width = 12;
+  ws.getColumn(7).width = 20;
+  ws.getColumn(8).width = 12;
+  ws.getColumn(9).width = 30;
+  ws.getColumn(10).width = 18;
+  ws.getColumn(11).width = 10;
+  ws.getColumn(12).width = 10;
+
+  const buf = await wb.xlsx.writeBuffer();
+  saveAs(new Blob([buf]), `PembayaranCustomer_${startDate}_sd_${endDate}.xlsx`);
+};
+
+export const exportPembayaranCustomerDetail = async (
+  items: any[],
+  startDate: string,
+  endDate: string,
+) => {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("PBC Detail");
+
+  const borderAll: Partial<ExcelJS.Borders> = {
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" },
+  };
+  const headerFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF2E7D32" },
+  };
+  const headerFont: Partial<ExcelJS.Font> = {
+    bold: true,
+    color: { argb: "FFFFFFFF" },
+    size: 10,
+  };
+  const setH = (cell: ExcelJS.Cell, val: string) => {
+    cell.value = val;
+    cell.font = headerFont;
+    cell.fill = headerFill;
+    cell.border = borderAll;
+    cell.alignment = { vertical: "middle", horizontal: "center" };
+  };
+  const setC = (
+    cell: ExcelJS.Cell,
+    val: any,
+    align: "left" | "center" | "right" = "left",
+  ) => {
+    cell.value = val;
+    cell.border = borderAll;
+    cell.font = { size: 10 };
+    cell.alignment = { vertical: "middle", horizontal: align };
+  };
+  const setN = (cell: ExcelJS.Cell, val: number) => {
+    cell.value = Number(val) || 0;
+    cell.border = borderAll;
+    cell.font = { size: 10 };
+    cell.numFmt = "#,##0";
+    cell.alignment = { vertical: "middle", horizontal: "right" };
+  };
+
+  ws.mergeCells("A1:G1");
+  ws.getCell("A1").value = "Detail Posting Pembayaran Customer";
+  ws.getCell("A1").font = { bold: true, size: 12 };
+  ws.mergeCells("A2:G2");
+  ws.getCell("A2").value = `Periode : ${startDate} s/d ${endDate}`;
+  ws.getCell("A2").font = { size: 10 };
+  ws.addRow([]);
+
+  const cols = [
+    "Nomor",
+    "No",
+    "Uraian",
+    "Nominal",
+    "Account",
+    "Nama Account",
+    "Detail CC",
+  ];
+  const hRow = ws.addRow(cols);
+  hRow.eachCell((cell, i) => setH(cell, cols[i - 1]));
+  hRow.height = 20;
+
+  let lastNomor = "";
+  for (const r of items) {
+    const row = ws.addRow([]);
+    const isRepeat = r.Nomor === lastNomor;
+    setC(row.getCell(1), isRepeat ? "" : r.Nomor);
+    setC(row.getCell(2), r.No, "center");
+    setC(row.getCell(3), r.Uraian);
+    setN(row.getCell(4), r.Nominal);
+    setC(row.getCell(5), r.Account);
+    setC(row.getCell(6), r.NamaAccount);
+    setC(row.getCell(7), r.DetailCC);
+    row.height = 16;
+    lastNomor = r.Nomor;
+  }
+
+  ws.getColumn(1).width = 20;
+  ws.getColumn(2).width = 6;
+  ws.getColumn(3).width = 40;
+  ws.getColumn(4).width = 18;
+  ws.getColumn(5).width = 12;
+  ws.getColumn(6).width = 28;
+  ws.getColumn(7).width = 20;
+
+  const buf = await wb.xlsx.writeBuffer();
+  saveAs(
+    new Blob([buf]),
+    `PembayaranCustomer_Detail_${startDate}_sd_${endDate}.xlsx`,
+  );
+};
+
+export const exportPembayaranCustKaosan = async (
+  items: any[],
+  startDate: string,
+  endDate: string,
+) => {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Pembayaran Cust Kaosan");
+
+  const borderAll: Partial<ExcelJS.Borders> = {
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" },
+  };
+  const headerFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF2E7D32" },
+  };
+  const headerFont: Partial<ExcelJS.Font> = {
+    bold: true,
+    color: { argb: "FFFFFFFF" },
+    size: 10,
+  };
+  const setH = (cell: ExcelJS.Cell, val: string) => {
+    cell.value = val;
+    cell.font = headerFont;
+    cell.fill = headerFill;
+    cell.border = borderAll;
+    cell.alignment = {
+      vertical: "middle",
+      horizontal: "center",
+      wrapText: true,
+    };
+  };
+  const setC = (
+    cell: ExcelJS.Cell,
+    val: any,
+    align: "left" | "center" | "right" = "left",
+  ) => {
+    cell.value = val;
+    cell.border = borderAll;
+    cell.font = { size: 10 };
+    cell.alignment = { vertical: "middle", horizontal: align };
+  };
+  const setN = (cell: ExcelJS.Cell, val: number) => {
+    cell.value = Number(val) || 0;
+    cell.border = borderAll;
+    cell.font = { size: 10 };
+    cell.numFmt = "#,##0";
+    cell.alignment = { vertical: "middle", horizontal: "right" };
+  };
+
+  ws.mergeCells("A1:N1");
+  ws.getCell("A1").value = "Posting Pembayaran Customer Kaosan";
+  ws.getCell("A1").font = { bold: true, size: 12 };
+  ws.mergeCells("A2:N2");
+  ws.getCell("A2").value = `Periode : ${startDate} s/d ${endDate}`;
+  ws.getCell("A2").font = { size: 10 };
+  ws.addRow([]);
+
+  const cols = [
+    "Nomor",
+    "Tipe",
+    "Account",
+    "Nama Account",
+    "Rekening",
+    "Tanggal",
+    "Tgl Transfer",
+    "Diterima Dari",
+    "Nota",
+    "Keterangan",
+    "Nominal",
+    "Cabang",
+    "Customer",
+    "Trs",
+  ];
+  const hRow = ws.addRow(cols);
+  hRow.eachCell((cell, i) => setH(cell, cols[i - 1]));
+  hRow.height = 20;
+
+  for (const r of items) {
+    const row = ws.addRow([]);
+    setC(row.getCell(1), r.Nomor);
+    setC(row.getCell(2), r.Tipe, "center");
+    setC(row.getCell(3), r.Account);
+    setC(row.getCell(4), r.NamaAccount);
+    setC(row.getCell(5), r.Rekening);
+    setC(row.getCell(6), r.Tanggal, "center");
+    setC(row.getCell(7), r.TglTransfer || "", "center");
+    setC(row.getCell(8), r.DiterimaDari);
+    setC(row.getCell(9), r.Nota);
+    setC(row.getCell(10), r.Keterangan);
+    setN(row.getCell(11), r.Nominal);
+    setC(row.getCell(12), r.Cabang, "center");
+    setC(row.getCell(13), r.Customer);
+    setC(row.getCell(14), r.Trs, "center");
+    row.height = 16;
+  }
+
+  ws.getColumn(1).width = 20;
+  ws.getColumn(2).width = 8;
+  ws.getColumn(3).width = 12;
+  ws.getColumn(4).width = 28;
+  ws.getColumn(5).width = 16;
+  ws.getColumn(6).width = 12;
+  ws.getColumn(7).width = 13;
+  ws.getColumn(8).width = 18;
+  ws.getColumn(9).width = 12;
+  ws.getColumn(10).width = 30;
+  ws.getColumn(11).width = 18;
+  ws.getColumn(12).width = 8;
+  ws.getColumn(13).width = 22;
+  ws.getColumn(14).width = 10;
+
+  const buf = await wb.xlsx.writeBuffer();
+  saveAs(
+    new Blob([buf]),
+    `PembayaranCustKaosan_${startDate}_sd_${endDate}.xlsx`,
+  );
+};
+
+export const exportPembayaranCustKaosanDetail = async (
+  items: any[],
+  startDate: string,
+  endDate: string,
+) => {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("PBK Detail");
+
+  const borderAll: Partial<ExcelJS.Borders> = {
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" },
+  };
+  const headerFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF2E7D32" },
+  };
+  const headerFont: Partial<ExcelJS.Font> = {
+    bold: true,
+    color: { argb: "FFFFFFFF" },
+    size: 10,
+  };
+  const setH = (cell: ExcelJS.Cell, val: string) => {
+    cell.value = val;
+    cell.font = headerFont;
+    cell.fill = headerFill;
+    cell.border = borderAll;
+    cell.alignment = { vertical: "middle", horizontal: "center" };
+  };
+  const setC = (
+    cell: ExcelJS.Cell,
+    val: any,
+    align: "left" | "center" | "right" = "left",
+  ) => {
+    cell.value = val;
+    cell.border = borderAll;
+    cell.font = { size: 10 };
+    cell.alignment = { vertical: "middle", horizontal: align };
+  };
+  const setN = (cell: ExcelJS.Cell, val: number) => {
+    cell.value = Number(val) || 0;
+    cell.border = borderAll;
+    cell.font = { size: 10 };
+    cell.numFmt = "#,##0";
+    cell.alignment = { vertical: "middle", horizontal: "right" };
+  };
+
+  ws.mergeCells("A1:G1");
+  ws.getCell("A1").value = "Detail Posting Pembayaran Customer Kaosan";
+  ws.getCell("A1").font = { bold: true, size: 12 };
+  ws.mergeCells("A2:G2");
+  ws.getCell("A2").value = `Periode : ${startDate} s/d ${endDate}`;
+  ws.getCell("A2").font = { size: 10 };
+  ws.addRow([]);
+
+  const cols = [
+    "Nomor",
+    "No",
+    "Uraian",
+    "Nominal",
+    "Account",
+    "Nama Account",
+    "Detail CC",
+  ];
+  const hRow = ws.addRow(cols);
+  hRow.eachCell((cell, i) => setH(cell, cols[i - 1]));
+  hRow.height = 20;
+
+  let lastNomor = "";
+  for (const r of items) {
+    const row = ws.addRow([]);
+    const isRepeat = r.Nomor === lastNomor;
+    setC(row.getCell(1), isRepeat ? "" : r.Nomor);
+    setC(row.getCell(2), r.No, "center");
+    setC(row.getCell(3), r.Uraian);
+    setN(row.getCell(4), r.Nominal);
+    setC(row.getCell(5), r.Account);
+    setC(row.getCell(6), r.NamaAccount);
+    setC(row.getCell(7), r.DetailCC);
+    row.height = 16;
+    lastNomor = r.Nomor;
+  }
+
+  ws.getColumn(1).width = 20;
+  ws.getColumn(2).width = 6;
+  ws.getColumn(3).width = 40;
+  ws.getColumn(4).width = 18;
+  ws.getColumn(5).width = 12;
+  ws.getColumn(6).width = 28;
+  ws.getColumn(7).width = 20;
+
+  const buf = await wb.xlsx.writeBuffer();
+  saveAs(
+    new Blob([buf]),
+    `PembayaranCustKaosan_Detail_${startDate}_sd_${endDate}.xlsx`,
+  );
+};
+
+export const exportListJurnal = async (
+  items: any[],
+  startDate: string,
+  endDate: string,
+) => {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("List Jurnal");
+
+  const borderAll: Partial<ExcelJS.Borders> = {
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" },
+  };
+  const headerFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF2E7D32" },
+  };
+  const headerFont: Partial<ExcelJS.Font> = {
+    bold: true,
+    color: { argb: "FFFFFFFF" },
+    size: 10,
+  };
+  const setH = (cell: ExcelJS.Cell, val: string) => {
+    cell.value = val;
+    cell.font = headerFont;
+    cell.fill = headerFill;
+    cell.border = borderAll;
+    cell.alignment = {
+      vertical: "middle",
+      horizontal: "center",
+      wrapText: true,
+    };
+  };
+  const setC = (
+    cell: ExcelJS.Cell,
+    val: any,
+    align: "left" | "center" | "right" = "left",
+  ) => {
+    cell.value = val;
+    cell.border = borderAll;
+    cell.font = { size: 10 };
+    cell.alignment = { vertical: "middle", horizontal: align };
+  };
+  const setN = (cell: ExcelJS.Cell, val: number) => {
+    cell.value = Number(val) || 0;
+    cell.border = borderAll;
+    cell.font = { size: 10 };
+    cell.numFmt = "#,##0";
+    cell.alignment = { vertical: "middle", horizontal: "right" };
+  };
+
+  ws.mergeCells("A1:K1");
+  ws.getCell("A1").value = "List Jurnal";
+  ws.getCell("A1").font = { bold: true, size: 12 };
+  ws.mergeCells("A2:K2");
+  ws.getCell("A2").value = `Periode : ${startDate} s/d ${endDate}`;
+  ws.getCell("A2").font = { size: 10 };
+  ws.addRow([]);
+
+  const cols = [
+    "Bulan",
+    "Tahun",
+    "Tanggal",
+    "Nomor",
+    "Referensi",
+    "Account",
+    "Nama Account",
+    "Keterangan",
+    "Debet",
+    "Kredit",
+    "Detail CC",
+  ];
+  const hRow = ws.addRow(cols);
+  hRow.eachCell((cell, i) => setH(cell, cols[i - 1]));
+  hRow.height = 20;
+
+  let totalDebet = 0;
+  let totalKredit = 0;
+
+  for (const r of items) {
+    const row = ws.addRow([]);
+    setC(row.getCell(1), r.Bulan, "center");
+    setC(row.getCell(2), r.Tahun, "center");
+    setC(row.getCell(3), r.Tanggal, "center");
+    setC(row.getCell(4), r.Nomor);
+    setC(row.getCell(5), r.Referensi);
+    setC(row.getCell(6), r.Account);
+    setC(row.getCell(7), r.AccountName);
+    setC(row.getCell(8), r.Keterangan);
+    setN(row.getCell(9), r.Debet);
+    setN(row.getCell(10), r.Kredit);
+    setC(row.getCell(11), r.DetailCC);
+    totalDebet += Number(r.Debet) || 0;
+    totalKredit += Number(r.Kredit) || 0;
+    row.height = 16;
+  }
+
+  // Footer total
+  const footRow = ws.addRow([]);
+  const footCells = Array.from({ length: 11 }, (_, i) =>
+    footRow.getCell(i + 1),
+  );
+  footCells.forEach((c) => {
+    c.border = borderAll;
+    c.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFE8F5E9" },
+    };
+  });
+  footRow.getCell(8).value = "TOTAL";
+  footRow.getCell(8).font = { bold: true, size: 10 };
+  footRow.getCell(8).alignment = { horizontal: "right" };
+  footRow.getCell(9).value = totalDebet;
+  footRow.getCell(9).numFmt = "#,##0";
+  footRow.getCell(9).font = { bold: true, size: 10 };
+  footRow.getCell(9).alignment = { horizontal: "right" };
+  footRow.getCell(10).value = totalKredit;
+  footRow.getCell(10).numFmt = "#,##0";
+  footRow.getCell(10).font = { bold: true, size: 10 };
+  footRow.getCell(10).alignment = { horizontal: "right" };
+
+  ws.getColumn(1).width = 8;
+  ws.getColumn(2).width = 8;
+  ws.getColumn(3).width = 12;
+  ws.getColumn(4).width = 22;
+  ws.getColumn(5).width = 22;
+  ws.getColumn(6).width = 12;
+  ws.getColumn(7).width = 28;
+  ws.getColumn(8).width = 32;
+  ws.getColumn(9).width = 18;
+  ws.getColumn(10).width = 18;
+  ws.getColumn(11).width = 20;
+
+  const buf = await wb.xlsx.writeBuffer();
+  saveAs(new Blob([buf]), `ListJurnal_${startDate}_sd_${endDate}.xlsx`);
+};
+
+export const exportListJurnalFromConfig = async (
+  data: Record<string, any>[],
+  rowFields: string[],
+  colFields: string[],
+  valField: string,
+  aggregator: string,
+  startDate: string,
+  endDate: string,
+) => {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Pivot");
+
+  const borderAll: Partial<ExcelJS.Borders> = {
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" },
+  };
+  const headerFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF2E7D32" },
+  };
+  const totalFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFE8F5E9" },
+  };
+  const headerFont: Partial<ExcelJS.Font> = {
+    bold: true,
+    color: { argb: "FFFFFFFF" },
+    size: 10,
+  };
+
+  // ── Kumpulkan nilai unik per colField (hierarkis) ──────────────────
+  // Buat composite key kolom: join nilai semua colFields
+  const colKeySet = new Set<string>();
+  const colKeyMap = new Map<string, Record<string, string>>(); // key → {field: value}
+  for (const row of data) {
+    const key = colFields.map((f) => String(row[f] ?? "")).join("|||");
+    if (!colKeySet.has(key)) {
+      colKeySet.add(key);
+      const obj: Record<string, string> = {};
+      colFields.forEach((f) => {
+        obj[f] = String(row[f] ?? "");
+      });
+      colKeyMap.set(key, obj);
+    }
+  }
+  const colKeys = [...colKeySet].sort();
+
+  // ── Kumpulkan nilai unik per rowField (hierarkis) ─────────────────
+  const rowKeySet = new Set<string>();
+  const rowKeyMap = new Map<string, Record<string, string>>();
+  for (const row of data) {
+    const key = rowFields.map((f) => String(row[f] ?? "")).join("|||");
+    if (!rowKeySet.has(key)) {
+      rowKeySet.add(key);
+      const obj: Record<string, string> = {};
+      rowFields.forEach((f) => {
+        obj[f] = String(row[f] ?? "");
+      });
+      rowKeyMap.set(key, obj);
+    }
+  }
+  const rowKeys = [...rowKeySet].sort();
+
+  // ── Agregasi ──────────────────────────────────────────────────────
+  // map: rowKey → colKey → {sum, count}
+  type AggVal = { sum: number; count: number };
+  const aggMap = new Map<string, Map<string, AggVal>>();
+  for (const d of data) {
+    const rk = rowFields.map((f) => String(d[f] ?? "")).join("|||");
+    const ck = colFields.map((f) => String(d[f] ?? "")).join("|||");
+    if (!aggMap.has(rk)) aggMap.set(rk, new Map());
+    const inner = aggMap.get(rk)!;
+    const cur = inner.get(ck) || { sum: 0, count: 0 };
+    cur.sum += Number(d[valField]) || 0;
+    cur.count += 1;
+    inner.set(ck, cur);
+  }
+
+  const getVal = (agg: AggVal | undefined): number => {
+    if (!agg) return 0;
+    if (aggregator === "Count") return agg.count;
+    if (aggregator === "Average") return agg.count ? agg.sum / agg.count : 0;
+    return agg.sum; // Sum (default)
+  };
+
+  // ── Tulis header info ──────────────────────────────────────────────
+  const totalCols = rowFields.length + colKeys.length + 1;
+  const endColLetter = String.fromCharCode(64 + Math.min(totalCols, 26));
+  ws.mergeCells(`A1:${endColLetter}1`);
+  ws.getCell("A1").value = `List Jurnal — Pivot (${aggregator} of ${valField})`;
+  ws.getCell("A1").font = { bold: true, size: 12 };
+  ws.mergeCells(`A2:${endColLetter}2`);
+  ws.getCell("A2").value = `Periode : ${startDate} s/d ${endDate}`;
+  ws.getCell("A2").font = { size: 10 };
+  ws.addRow([]);
+
+  // ── Tulis header kolom (satu baris per colField level) ────────────
+  const headerStartRow = 4;
+
+  // Untuk setiap level colField, tulis header dengan merge jika nilai berurutan sama
+  colFields.forEach((field, levelIdx) => {
+    const row = ws.getRow(headerStartRow + levelIdx);
+
+    // Cells untuk rowFields (kiri atas, merge vertikal nanti)
+    rowFields.forEach((rf, ri) => {
+      if (levelIdx === 0) {
+        // Tulis label rowField hanya di level pertama
+        const cell = row.getCell(ri + 1);
+        cell.value = rf;
+        cell.font = headerFont;
+        cell.fill = headerFill;
+        cell.border = borderAll;
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+      } else {
+        const cell = row.getCell(ri + 1);
+        cell.fill = headerFill;
+        cell.border = borderAll;
+      }
+    });
+
+    // Tulis nilai colField per kolom data
+    let mergeStart = rowFields.length + 1;
+    let prevVal = "";
+    colKeys.forEach((ck, ci) => {
+      const val = colKeyMap.get(ck)?.[field] ?? "";
+      const colIdx = rowFields.length + ci + 1;
+      const cell = row.getCell(colIdx);
+      cell.value = val;
+      cell.font = headerFont;
+      cell.fill = headerFill;
+      cell.border = borderAll;
+      cell.alignment = { vertical: "middle", horizontal: "center" };
+      prevVal = val;
+    });
+
+    // Total header
+    const totalCell = row.getCell(rowFields.length + colKeys.length + 1);
+    if (levelIdx === 0) {
+      totalCell.value = "Totals";
+      totalCell.font = headerFont;
+      totalCell.fill = headerFill;
+      totalCell.border = borderAll;
+      totalCell.alignment = { vertical: "middle", horizontal: "center" };
+    } else {
+      totalCell.fill = headerFill;
+      totalCell.border = borderAll;
+    }
+
+    row.height = 18;
+  });
+
+  // ── Tulis data ──────────────────────────────────────────────────────
+  let dataRowNum = headerStartRow + colFields.length;
+  const colTotals = new Map<string, number>();
+  let grandTotal = 0;
+
+  for (const rk of rowKeys) {
+    const row = ws.getRow(dataRowNum);
+    const rowVals = rowKeyMap.get(rk)!;
+
+    // Tulis nilai rowFields
+    rowFields.forEach((rf, ri) => {
+      const cell = row.getCell(ri + 1);
+      cell.value = rowVals[rf] ?? "";
+      cell.border = borderAll;
+      cell.font = { size: 10 };
+      cell.alignment = { vertical: "middle", horizontal: "left" };
+    });
+
+    // Tulis nilai data per kolom
+    let rowTotal = 0;
+    colKeys.forEach((ck, ci) => {
+      const agg = aggMap.get(rk)?.get(ck);
+      const val = getVal(agg);
+      const cell = row.getCell(rowFields.length + ci + 1);
+      cell.value = val || 0;
+      cell.border = borderAll;
+      cell.font = { size: 10 };
+      cell.numFmt = "#,##0";
+      cell.alignment = { vertical: "middle", horizontal: "right" };
+      rowTotal += val;
+      colTotals.set(ck, (colTotals.get(ck) ?? 0) + val);
+    });
+
+    // Row total
+    const totalCell = row.getCell(rowFields.length + colKeys.length + 1);
+    totalCell.value = rowTotal;
+    totalCell.border = borderAll;
+    totalCell.font = { size: 10, bold: true };
+    totalCell.numFmt = "#,##0";
+    totalCell.alignment = { vertical: "middle", horizontal: "right" };
+    grandTotal += rowTotal;
+
+    row.height = 16;
+    dataRowNum++;
+  }
+
+  // ── Totals row ──────────────────────────────────────────────────────
+  const footRow = ws.getRow(dataRowNum);
+  rowFields.forEach((_, ri) => {
+    const cell = footRow.getCell(ri + 1);
+    cell.value = ri === 0 ? "Totals" : "";
+    cell.border = borderAll;
+    cell.font = { bold: true, size: 10 };
+    cell.fill = totalFill;
+    cell.alignment = { horizontal: ri === 0 ? "left" : "center" };
+  });
+
+  colKeys.forEach((ck, ci) => {
+    const cell = footRow.getCell(rowFields.length + ci + 1);
+    cell.value = colTotals.get(ck) ?? 0;
+    cell.border = borderAll;
+    cell.font = { bold: true, size: 10 };
+    cell.fill = totalFill;
+    cell.numFmt = "#,##0";
+    cell.alignment = { vertical: "middle", horizontal: "right" };
+  });
+
+  const gtCell = footRow.getCell(rowFields.length + colKeys.length + 1);
+  gtCell.value = grandTotal;
+  gtCell.border = borderAll;
+  gtCell.font = { bold: true, size: 10 };
+  gtCell.fill = totalFill;
+  gtCell.numFmt = "#,##0";
+  gtCell.alignment = { vertical: "middle", horizontal: "right" };
+  footRow.height = 18;
+
+  // ── Column widths ──────────────────────────────────────────────────
+  rowFields.forEach((_, i) => {
+    ws.getColumn(i + 1).width = 28;
+  });
+  colKeys.forEach((_, i) => {
+    ws.getColumn(rowFields.length + i + 1).width = 14;
+  });
+  ws.getColumn(rowFields.length + colKeys.length + 1).width = 16;
+
+  const buf = await wb.xlsx.writeBuffer();
+  saveAs(new Blob([buf]), `ListJurnal_Pivot_${startDate}_sd_${endDate}.xlsx`);
+};
+
+export const exportBukuBesar = async (
+  items: any[],
+  rekkode: string,
+  reknama: string,
+  startDate: string,
+  endDate: string,
+) => {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Buku Besar");
+
+  const borderAll: Partial<ExcelJS.Borders> = {
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" },
+  };
+  const headerFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF2E7D32" },
+  };
+  const headerFont: Partial<ExcelJS.Font> = {
+    bold: true,
+    color: { argb: "FFFFFFFF" },
+    size: 10,
+  };
+  const saldoAwalFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFFFF9C4" },
+  };
+  const totalFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFE8F5E9" },
+  };
+
+  const setH = (cell: ExcelJS.Cell, val: string) => {
+    cell.value = val;
+    cell.font = headerFont;
+    cell.fill = headerFill;
+    cell.border = borderAll;
+    cell.alignment = {
+      vertical: "middle",
+      horizontal: "center",
+      wrapText: true,
+    };
+  };
+  const setC = (
+    cell: ExcelJS.Cell,
+    val: any,
+    align: "left" | "center" | "right" = "left",
+    bold = false,
+  ) => {
+    cell.value = val;
+    cell.border = borderAll;
+    cell.font = { size: 10, bold };
+    cell.alignment = { vertical: "middle", horizontal: align };
+  };
+  const setN = (cell: ExcelJS.Cell, val: number, bold = false) => {
+    cell.value = Number(val) || 0;
+    cell.border = borderAll;
+    cell.font = { size: 10, bold };
+    cell.numFmt = "#,##0";
+    cell.alignment = { vertical: "middle", horizontal: "right" };
+  };
+
+  // ── Header info ──
+  ws.mergeCells("A1:L1");
+  ws.getCell("A1").value = "Buku Besar";
+  ws.getCell("A1").font = { bold: true, size: 12 };
+  ws.mergeCells("A2:L2");
+  ws.getCell("A2").value = `Account : (${rekkode}) ${reknama}`;
+  ws.getCell("A2").font = { size: 10 };
+  ws.mergeCells("A3:L3");
+  ws.getCell("A3").value = `Periode : ${startDate} s/d ${endDate}`;
+  ws.getCell("A3").font = { size: 10 };
+  ws.addRow([]);
+
+  const cols = [
+    "Tanggal",
+    "Nomor",
+    "Trs",
+    "Nota",
+    "Penerima",
+    "Keterangan",
+    "Debet",
+    "Kredit",
+    "Saldo",
+    "Account",
+    "Nama Account",
+    "Tgl Transfer",
+  ];
+  const hRow = ws.addRow(cols);
+  hRow.eachCell((cell, i) => setH(cell, cols[i - 1]));
+  hRow.height = 20;
+
+  let totalDebet = 0;
+  let totalKredit = 0;
+
+  for (const r of items) {
+    const row = ws.addRow([]);
+    const isSaldoAwal = r.Keterangan === "Saldo Awal";
+
+    setC(row.getCell(1), r.Tanggal, "center");
+    setC(row.getCell(2), r.Nomor);
+    setC(row.getCell(3), r.Trs, "center");
+    setC(row.getCell(4), r.Nota);
+    setC(row.getCell(5), r.Penerima);
+    setC(row.getCell(6), r.Keterangan, "left", isSaldoAwal);
+    setN(row.getCell(7), r.Debet);
+    setN(row.getCell(8), r.Kredit);
+    setN(row.getCell(9), r.Saldo, true);
+    setC(row.getCell(10), r.Account);
+    setC(row.getCell(11), r.NamaAccount);
+    setC(row.getCell(12), r.TglTransfer || "", "center");
+
+    if (isSaldoAwal) {
+      for (let c = 1; c <= 12; c++) {
+        row.getCell(c).fill = saldoAwalFill;
+      }
+    }
+
+    if (!isSaldoAwal) {
+      totalDebet += Number(r.Debet) || 0;
+      totalKredit += Number(r.Kredit) || 0;
+    }
+    row.height = 16;
+  }
+
+  // Footer total
+  const footRow = ws.addRow([]);
+  for (let c = 1; c <= 12; c++) {
+    footRow.getCell(c).border = borderAll;
+    footRow.getCell(c).fill = totalFill;
+  }
+  setC(footRow.getCell(6), "TOTAL", "right", true);
+  setN(footRow.getCell(7), totalDebet, true);
+  setN(footRow.getCell(8), totalKredit, true);
+  const lastSaldo = items.length > 0 ? items[items.length - 1].Saldo : 0;
+  setN(footRow.getCell(9), lastSaldo, true);
+  footRow.height = 18;
+
+  ws.getColumn(1).width = 12;
+  ws.getColumn(2).width = 20;
+  ws.getColumn(3).width = 8;
+  ws.getColumn(4).width = 14;
+  ws.getColumn(5).width = 16;
+  ws.getColumn(6).width = 35;
+  ws.getColumn(7).width = 18;
+  ws.getColumn(8).width = 18;
+  ws.getColumn(9).width = 18;
+  ws.getColumn(10).width = 10;
+  ws.getColumn(11).width = 30;
+  ws.getColumn(12).width = 13;
+
+  const buf = await wb.xlsx.writeBuffer();
+  saveAs(
+    new Blob([buf]),
+    `BukuBesar_${rekkode}_${startDate}_sd_${endDate}.xlsx`,
+  );
+};
+
+export const exportKasbonBelumSelesai = async (
+  items: any[],
+  rekkode: string,
+  reknama: string,
+) => {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Kasbon Belum Selesai");
+
+  const borderAll: Partial<ExcelJS.Borders> = {
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" },
+  };
+  const headerFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF2E7D32" },
+  };
+  const headerFont: Partial<ExcelJS.Font> = {
+    bold: true,
+    color: { argb: "FFFFFFFF" },
+    size: 10,
+  };
+  const totalFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFE8F5E9" },
+  };
+
+  const setH = (cell: ExcelJS.Cell, val: string) => {
+    cell.value = val;
+    cell.font = headerFont;
+    cell.fill = headerFill;
+    cell.border = borderAll;
+    cell.alignment = { vertical: "middle", horizontal: "center" };
+  };
+  const setC = (
+    cell: ExcelJS.Cell,
+    val: any,
+    align: "left" | "center" | "right" = "left",
+    bold = false,
+  ) => {
+    cell.value = val;
+    cell.border = borderAll;
+    cell.font = { size: 10, bold };
+    cell.alignment = { vertical: "middle", horizontal: align };
+  };
+  const setN = (cell: ExcelJS.Cell, val: number, bold = false) => {
+    cell.value = Number(val) || 0;
+    cell.border = borderAll;
+    cell.font = { size: 10, bold };
+    cell.numFmt = "#,##0";
+    cell.alignment = { vertical: "middle", horizontal: "right" };
+  };
+
+  ws.mergeCells("A1:H1");
+  ws.getCell("A1").value = "Kasbon Belum Selesai";
+  ws.getCell("A1").font = { bold: true, size: 12 };
+  ws.mergeCells("A2:H2");
+  ws.getCell("A2").value = `Account : (${rekkode}) ${reknama}`;
+  ws.getCell("A2").font = { size: 10 };
+  ws.addRow([]);
+
+  const cols = [
+    "Nomor",
+    "Tanggal",
+    "Jenis",
+    "Pjh",
+    "Nota",
+    "Penerima",
+    "Nominal",
+    "Keterangan",
+  ];
+  const hRow = ws.addRow(cols);
+  hRow.eachCell((cell, i) => setH(cell, cols[i - 1]));
+  hRow.height = 20;
+
+  let totalNominal = 0;
+  for (const r of items) {
+    const row = ws.addRow([]);
+    setC(row.getCell(1), r.Nomor);
+    setC(row.getCell(2), r.Tanggal, "center");
+    setC(row.getCell(3), r.Jenis, "center");
+    setC(row.getCell(4), r.Pjh);
+    setC(row.getCell(5), r.Nota);
+    setC(row.getCell(6), r.Penerima);
+    setN(row.getCell(7), r.Nominal);
+    setC(row.getCell(8), r.Keterangan);
+    totalNominal += Number(r.Nominal) || 0;
+    row.height = 16;
+  }
+
+  const footRow = ws.addRow([]);
+  for (let c = 1; c <= 8; c++) {
+    footRow.getCell(c).border = borderAll;
+    footRow.getCell(c).fill = totalFill;
+  }
+  setC(footRow.getCell(6), "TOTAL", "right", true);
+  setN(footRow.getCell(7), totalNominal, true);
+  footRow.height = 18;
+
+  ws.getColumn(1).width = 20;
+  ws.getColumn(2).width = 12;
+  ws.getColumn(3).width = 8;
+  ws.getColumn(4).width = 16;
+  ws.getColumn(5).width = 12;
+  ws.getColumn(6).width = 16;
+  ws.getColumn(7).width = 16;
+  ws.getColumn(8).width = 35;
+
+  const buf = await wb.xlsx.writeBuffer();
+  saveAs(new Blob([buf]), `KasbonBelumSelesai_${rekkode}.xlsx`);
+};
+
+export const exportKasbonBelumSelesaiDetail = async (
+  items: any[],
+  rekkode: string,
+  reknama: string,
+) => {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Detail Kasbon");
+
+  const borderAll: Partial<ExcelJS.Borders> = {
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" },
+  };
+  const headerFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF1B5E20" },
+  };
+  const headerFont: Partial<ExcelJS.Font> = {
+    bold: true,
+    color: { argb: "FFFFFFFF" },
+    size: 10,
+  };
+  const totalFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFE8F5E9" },
+  };
+
+  const setH = (cell: ExcelJS.Cell, val: string) => {
+    cell.value = val;
+    cell.font = headerFont;
+    cell.fill = headerFill;
+    cell.border = borderAll;
+    cell.alignment = { vertical: "middle", horizontal: "center" };
+  };
+  const setC = (
+    cell: ExcelJS.Cell,
+    val: any,
+    align: "left" | "center" | "right" = "left",
+    bold = false,
+  ) => {
+    cell.value = val;
+    cell.border = borderAll;
+    cell.font = { size: 10, bold };
+    cell.alignment = { vertical: "middle", horizontal: align };
+  };
+  const setN = (cell: ExcelJS.Cell, val: number, bold = false) => {
+    cell.value = Number(val) || 0;
+    cell.border = borderAll;
+    cell.font = { size: 10, bold };
+    cell.numFmt = "#,##0";
+    cell.alignment = { vertical: "middle", horizontal: "right" };
+  };
+
+  ws.mergeCells("A1:H1");
+  ws.getCell("A1").value = "Detail Kasbon Belum Selesai";
+  ws.getCell("A1").font = { bold: true, size: 12 };
+  ws.mergeCells("A2:H2");
+  ws.getCell("A2").value = `Account : (${rekkode}) ${reknama}`;
+  ws.getCell("A2").font = { size: 10 };
+  ws.addRow([]);
+
+  const cols = [
+    "Nomor",
+    "Uraian",
+    "Satuan",
+    "Qty",
+    "Nominal",
+    "Total",
+    "Kegunaan",
+    "Keterangan",
+  ];
+  const hRow = ws.addRow(cols);
+  hRow.eachCell((cell, i) => setH(cell, cols[i - 1]));
+  hRow.height = 20;
+
+  let totalNominal = 0;
+  let totalTotal = 0;
+  for (const r of items) {
+    const row = ws.addRow([]);
+    setC(row.getCell(1), r.Nomor);
+    setC(row.getCell(2), r.Uraian);
+    setC(row.getCell(3), r.Satuan, "center");
+    setN(row.getCell(4), r.Qty);
+    setN(row.getCell(5), r.Nominal);
+    setN(row.getCell(6), r.Total);
+    setC(row.getCell(7), r.Kegunaan);
+    setC(row.getCell(8), r.Keterangan);
+    totalNominal += Number(r.Nominal) || 0;
+    totalTotal += Number(r.Total) || 0;
+    row.height = 16;
+  }
+
+  const footRow = ws.addRow([]);
+  for (let c = 1; c <= 8; c++) {
+    footRow.getCell(c).border = borderAll;
+    footRow.getCell(c).fill = totalFill;
+  }
+  setC(footRow.getCell(4), "TOTAL", "right", true);
+  setN(footRow.getCell(5), totalNominal, true);
+  setN(footRow.getCell(6), totalTotal, true);
+  footRow.height = 18;
+
+  ws.getColumn(1).width = 20;
+  ws.getColumn(2).width = 35;
+  ws.getColumn(3).width = 10;
+  ws.getColumn(4).width = 10;
+  ws.getColumn(5).width = 14;
+  ws.getColumn(6).width = 14;
+  ws.getColumn(7).width = 20;
+  ws.getColumn(8).width = 16;
+
+  const buf = await wb.xlsx.writeBuffer();
+  saveAs(new Blob([buf]), `KasbonBelumSelesai_Detail_${rekkode}.xlsx`);
+};
+
+export const exportRekonsiliasiBankMaster = async (
+  items: any[],
+  startDate: string,
+  endDate: string,
+) => {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Rekonsiliasi Bank");
+
+  const borderAll: Partial<ExcelJS.Borders> = {
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" },
+  };
+  const headerFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF2E7D32" },
+  };
+  const subHeaderFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF1B5E20" },
+  };
+  const headerFont: Partial<ExcelJS.Font> = {
+    bold: true,
+    color: { argb: "FFFFFFFF" },
+    size: 10,
+  };
+  const totalFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFE8F5E9" },
+  };
+  const selisihNolFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFF0FDF4" },
+  };
+  const selisihAdaFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFFFF3E0" },
+  };
+
+  const setH = (cell: ExcelJS.Cell, val: string, fill = headerFill) => {
+    cell.value = val;
+    cell.font = headerFont;
+    cell.fill = fill;
+    cell.border = borderAll;
+    cell.alignment = {
+      vertical: "middle",
+      horizontal: "center",
+      wrapText: true,
+    };
+  };
+  const setC = (
+    cell: ExcelJS.Cell,
+    val: any,
+    align: "left" | "center" | "right" = "left",
+    bold = false,
+  ) => {
+    cell.value = val;
+    cell.border = borderAll;
+    cell.font = { size: 10, bold };
+    cell.alignment = { vertical: "middle", horizontal: align };
+  };
+  const setN = (
+    cell: ExcelJS.Cell,
+    val: number,
+    bold = false,
+    color?: string,
+  ) => {
+    cell.value = Number(val) || 0;
+    cell.border = borderAll;
+    cell.font = { size: 10, bold, color: color ? { argb: color } : undefined };
+    cell.numFmt = "#,##0";
+    cell.alignment = { vertical: "middle", horizontal: "right" };
+  };
+
+  // ── Info header ──
+  ws.mergeCells("A1:L1");
+  ws.getCell("A1").value = "Laporan Rekonsiliasi Bank";
+  ws.getCell("A1").font = { bold: true, size: 12 };
+  ws.mergeCells("A2:L2");
+  ws.getCell("A2").value = `Periode : ${startDate} s/d ${endDate}`;
+  ws.getCell("A2").font = { size: 10 };
+  ws.addRow([]);
+
+  // ── Header row 1 (group) ──
+  const row4 = ws.getRow(4);
+  setH(row4.getCell(1), "Tanggal");
+  setH(row4.getCell(2), "Account");
+  setH(row4.getCell(3), "Nama");
+  ws.mergeCells(4, 4, 4, 7);
+  setH(row4.getCell(4), "BUKU");
+  ws.mergeCells(4, 8, 4, 11);
+  setH(row4.getCell(8), "BANK", subHeaderFill);
+  setH(row4.getCell(12), "Selisih");
+  row4.height = 20;
+
+  // ── Header row 2 (sub) ──
+  const row5 = ws.getRow(5);
+  setH(row5.getCell(1), "");
+  setH(row5.getCell(2), "");
+  setH(row5.getCell(3), "");
+  setH(row5.getCell(4), "Saldo Buku");
+  setH(row5.getCell(5), "Tambah");
+  setH(row5.getCell(6), "Kurang");
+  setH(row5.getCell(7), "Saldo Akhir");
+  setH(row5.getCell(8), "Saldo Bank", subHeaderFill);
+  setH(row5.getCell(9), "Tambah_", subHeaderFill);
+  setH(row5.getCell(10), "Kurang_", subHeaderFill);
+  setH(row5.getCell(11), "Saldo Akhir", subHeaderFill);
+  setH(row5.getCell(12), "");
+  row5.height = 18;
+
+  // ── Data rows ──
+  let totSaldoBuku = 0,
+    totTambah = 0,
+    totKurang = 0,
+    totBuku = 0;
+  let totSaldoBank = 0,
+    totTambah_ = 0,
+    totKurang_ = 0,
+    totBank = 0;
+  let totSelisih = 0;
+
+  let dataRowNum = 6;
+  for (const r of items) {
+    const row = ws.getRow(dataRowNum);
+    setC(row.getCell(1), r.Tanggal, "center");
+    setC(row.getCell(2), r.Account);
+    setC(row.getCell(3), r.Nama);
+    setN(row.getCell(4), r.SaldoBuku);
+    setN(row.getCell(5), r.Tambah);
+    setN(row.getCell(6), r.Kurang);
+    setN(row.getCell(7), r.Buku, true);
+    setN(row.getCell(8), r.SaldoBank);
+    setN(row.getCell(9), r.Tambah_);
+    setN(row.getCell(10), r.Kurang_);
+    setN(row.getCell(11), r.Bank, true);
+    setN(
+      row.getCell(12),
+      r.Selisih,
+      true,
+      Number(r.Selisih) !== 0 ? "FFCC3300" : undefined,
+    );
+
+    // Warna baris berdasarkan selisih
+    const rowFill = Number(r.Selisih) === 0 ? selisihNolFill : selisihAdaFill;
+    for (let c = 1; c <= 12; c++) {
+      if (
+        !row.getCell(c).fill ||
+        (row.getCell(c).fill as any).fgColor?.argb === "FFFFFFFF"
+      ) {
+        row.getCell(c).fill = rowFill;
+      }
+    }
+
+    totSaldoBuku += Number(r.SaldoBuku);
+    totTambah += Number(r.Tambah);
+    totKurang += Number(r.Kurang);
+    totBuku += Number(r.Buku);
+    totSaldoBank += Number(r.SaldoBank);
+    totTambah_ += Number(r.Tambah_);
+    totKurang_ += Number(r.Kurang_);
+    totBank += Number(r.Bank);
+    totSelisih += Number(r.Selisih);
+    row.height = 16;
+    dataRowNum++;
+  }
+
+  // ── Footer total ──
+  const footRow = ws.getRow(dataRowNum);
+  for (let c = 1; c <= 12; c++) {
+    footRow.getCell(c).border = borderAll;
+    footRow.getCell(c).fill = totalFill;
+  }
+  setC(footRow.getCell(3), "TOTAL", "right", true);
+  setN(footRow.getCell(4), totSaldoBuku, true);
+  setN(footRow.getCell(5), totTambah, true);
+  setN(footRow.getCell(6), totKurang, true);
+  setN(footRow.getCell(7), totBuku, true);
+  setN(footRow.getCell(8), totSaldoBank, true);
+  setN(footRow.getCell(9), totTambah_, true);
+  setN(footRow.getCell(10), totKurang_, true);
+  setN(footRow.getCell(11), totBank, true);
+  setN(
+    footRow.getCell(12),
+    totSelisih,
+    true,
+    totSelisih !== 0 ? "FFCC3300" : undefined,
+  );
+  footRow.height = 18;
+
+  // ── Column widths ──
+  ws.getColumn(1).width = 12;
+  ws.getColumn(2).width = 10;
+  ws.getColumn(3).width = 28;
+  ws.getColumn(4).width = 16;
+  ws.getColumn(5).width = 14;
+  ws.getColumn(6).width = 14;
+  ws.getColumn(7).width = 16;
+  ws.getColumn(8).width = 16;
+  ws.getColumn(9).width = 14;
+  ws.getColumn(10).width = 14;
+  ws.getColumn(11).width = 16;
+  ws.getColumn(12).width = 14;
+
+  const buf = await wb.xlsx.writeBuffer();
+  saveAs(
+    new Blob([buf]),
+    `RekonsiliasiBankMaster_${startDate}_sd_${endDate}.xlsx`,
+  );
+};
+
+export const exportRekonsiliasiBankDetail = async (
+  items: any[],
+  startDate: string,
+  endDate: string,
+) => {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Detail Rekonsiliasi");
+
+  const borderAll: Partial<ExcelJS.Borders> = {
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" },
+  };
+  const headerFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF1B5E20" },
+  };
+  const headerFont: Partial<ExcelJS.Font> = {
+    bold: true,
+    color: { argb: "FFFFFFFF" },
+    size: 10,
+  };
+  const totalFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFE8F5E9" },
+  };
+
+  const setH = (cell: ExcelJS.Cell, val: string) => {
+    cell.value = val;
+    cell.font = headerFont;
+    cell.fill = headerFill;
+    cell.border = borderAll;
+    cell.alignment = { vertical: "middle", horizontal: "center" };
+  };
+  const setC = (
+    cell: ExcelJS.Cell,
+    val: any,
+    align: "left" | "center" | "right" = "left",
+    bold = false,
+  ) => {
+    cell.value = val;
+    cell.border = borderAll;
+    cell.font = { size: 10, bold };
+    cell.alignment = { vertical: "middle", horizontal: align };
+  };
+  const setN = (cell: ExcelJS.Cell, val: number, bold = false) => {
+    cell.value = Number(val) || 0;
+    cell.border = borderAll;
+    cell.font = { size: 10, bold };
+    cell.numFmt = "#,##0";
+    cell.alignment = { vertical: "middle", horizontal: "right" };
+  };
+
+  ws.mergeCells("A1:G1");
+  ws.getCell("A1").value = "Detail Rekonsiliasi Bank";
+  ws.getCell("A1").font = { bold: true, size: 12 };
+  ws.mergeCells("A2:G2");
+  ws.getCell("A2").value = `Periode : ${startDate} s/d ${endDate}`;
+  ws.getCell("A2").font = { size: 10 };
+  ws.addRow([]);
+
+  const cols = [
+    "Tanggal",
+    "Account",
+    "Nama",
+    "Jenis",
+    "Nomor",
+    "Keterangan",
+    "Nominal",
+  ];
+  const hRow = ws.addRow(cols);
+  hRow.eachCell((cell, i) => setH(cell, cols[i - 1]));
+  hRow.height = 20;
+
+  let total = 0;
+  for (const r of items) {
+    const row = ws.addRow([]);
+    setC(row.getCell(1), r.Tanggal, "center");
+    setC(row.getCell(2), r.Account);
+    setC(row.getCell(3), r.Nama);
+    setC(row.getCell(4), r.Jenis, "center");
+    setC(row.getCell(5), r.Nomor);
+    setC(row.getCell(6), r.Keterangan);
+    setN(row.getCell(7), r.Nominal);
+    total += Number(r.Nominal) || 0;
+    row.height = 16;
+  }
+
+  const footRow = ws.addRow([]);
+  for (let c = 1; c <= 7; c++) {
+    footRow.getCell(c).border = borderAll;
+    footRow.getCell(c).fill = totalFill;
+  }
+  setC(footRow.getCell(6), "TOTAL", "right", true);
+  setN(footRow.getCell(7), total, true);
+  footRow.height = 18;
+
+  ws.getColumn(1).width = 12;
+  ws.getColumn(2).width = 10;
+  ws.getColumn(3).width = 28;
+  ws.getColumn(4).width = 14;
+  ws.getColumn(5).width = 18;
+  ws.getColumn(6).width = 30;
+  ws.getColumn(7).width = 16;
+
+  const buf = await wb.xlsx.writeBuffer();
+  saveAs(
+    new Blob([buf]),
+    `RekonsiliasiBankDetail_${startDate}_sd_${endDate}.xlsx`,
+  );
+};
+
+export const exportStokFinance = async (items: any[], cabang: string) => {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Stok Finance");
+
+  const borderAll: Partial<ExcelJS.Borders> = {
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" },
+  };
+  const headerFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF2E7D32" },
+  };
+  const headerFont: Partial<ExcelJS.Font> = {
+    bold: true,
+    color: { argb: "FFFFFFFF" },
+    size: 10,
+  };
+  const totalFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFE8F5E9" },
+  };
+  const realNegFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFFFF3E0" },
+  };
+
+  const setH = (cell: ExcelJS.Cell, val: string) => {
+    cell.value = val;
+    cell.font = headerFont;
+    cell.fill = headerFill;
+    cell.border = borderAll;
+    cell.alignment = { vertical: "middle", horizontal: "center" };
+  };
+  const setC = (
+    cell: ExcelJS.Cell,
+    val: any,
+    align: "left" | "center" | "right" = "left",
+    bold = false,
+  ) => {
+    cell.value = val;
+    cell.border = borderAll;
+    cell.font = { size: 10, bold };
+    cell.alignment = { vertical: "middle", horizontal: align };
+  };
+  const setN = (
+    cell: ExcelJS.Cell,
+    val: number,
+    bold = false,
+    color?: string,
+  ) => {
+    cell.value = Number(val) || 0;
+    cell.border = borderAll;
+    cell.font = { size: 10, bold, color: color ? { argb: color } : undefined };
+    cell.numFmt = "#,##0";
+    cell.alignment = { vertical: "middle", horizontal: "right" };
+  };
+
+  ws.mergeCells("A1:G1");
+  ws.getCell("A1").value = `Stok Finance — Cabang ${cabang}`;
+  ws.getCell("A1").font = { bold: true, size: 12 };
+  ws.addRow([]);
+
+  const cols = ["Jenis", "Kode", "Nama", "Satuan", "Stok", "Mutasi", "REAL"];
+  const hRow = ws.addRow(cols);
+  hRow.eachCell((cell, i) => setH(cell, cols[i - 1]));
+  hRow.height = 20;
+
+  let totStok = 0,
+    totMutasi = 0,
+    totReal = 0;
+  for (const r of items) {
+    const row = ws.addRow([]);
+    setC(row.getCell(1), r.Jenis, "center");
+    setC(row.getCell(2), r.Kode);
+    setC(row.getCell(3), r.Nama);
+    setC(row.getCell(4), r.Satuan, "center");
+    setN(row.getCell(5), r.Stok);
+    setN(row.getCell(6), r.Mutasi);
+    setN(
+      row.getCell(7),
+      r.REAL_,
+      true,
+      Number(r.REAL_) < 0 ? "FFCC3300" : undefined,
+    );
+    if (Number(r.REAL_) < 0) {
+      for (let c = 1; c <= 7; c++) row.getCell(c).fill = realNegFill;
+    }
+    totStok += Number(r.Stok);
+    totMutasi += Number(r.Mutasi);
+    totReal += Number(r.REAL_);
+    row.height = 16;
+  }
+
+  const footRow = ws.addRow([]);
+  for (let c = 1; c <= 7; c++) {
+    footRow.getCell(c).border = borderAll;
+    footRow.getCell(c).fill = totalFill;
+  }
+  setC(footRow.getCell(3), "TOTAL", "right", true);
+  setN(footRow.getCell(5), totStok, true);
+  setN(footRow.getCell(6), totMutasi, true);
+  setN(footRow.getCell(7), totReal, true, totReal < 0 ? "FFCC3300" : undefined);
+  footRow.height = 18;
+
+  ws.getColumn(1).width = 14;
+  ws.getColumn(2).width = 14;
+  ws.getColumn(3).width = 40;
+  ws.getColumn(4).width = 10;
+  ws.getColumn(5).width = 12;
+  ws.getColumn(6).width = 12;
+  ws.getColumn(7).width = 12;
+
+  const buf = await wb.xlsx.writeBuffer();
+  saveAs(new Blob([buf]), `StokFinance_${cabang}.xlsx`);
+};

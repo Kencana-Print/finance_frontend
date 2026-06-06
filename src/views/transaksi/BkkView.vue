@@ -52,6 +52,7 @@ watch([startDate, endDate], ([s, e]) => {
   } catch {
     /* silent */
   }
+  loadData();
 });
 
 // ── Data ──────────────────────────────────────────────────────────────
@@ -217,14 +218,11 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
   >
     <!-- ── Filter kiri: periode ── -->
     <template #filter-left>
-      <div class="d-flex align-center gap-2 flex-wrap">
+      <div class="filter-group">
         <span class="filter-lbl">Periode</span>
         <input v-model="startDate" type="date" class="date-inp" />
-        <span class="filter-lbl">s/d</span>
+        <span class="filter-sep">s/d</span>
         <input v-model="endDate" type="date" class="date-inp" />
-        <v-btn size="small" color="primary" variant="tonal" @click="loadData">
-          Tampilkan
-        </v-btn>
       </div>
     </template>
 
@@ -351,10 +349,22 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
 </template>
 
 <style scoped>
+/* Filter */
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap; /* Mencegah overflow */
+}
 .filter-lbl {
   font-size: 12px;
   font-weight: 600;
   color: #374151;
+  white-space: nowrap;
+}
+.filter-sep {
+  font-size: 12px;
+  color: #9ca3af;
   white-space: nowrap;
 }
 .date-inp {
@@ -364,6 +374,7 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
   padding: 0 8px;
   font-size: 12px;
   outline: none;
+  width: 130px;
 }
 .date-inp:focus {
   border-color: #2e7d32;

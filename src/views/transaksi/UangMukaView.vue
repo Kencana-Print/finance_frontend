@@ -54,6 +54,7 @@ watch(
     } catch {
       /* silent */
     }
+    fetchData();
   },
 );
 
@@ -195,20 +196,10 @@ const onCetakSelesai = () => {
     <!-- Filter tanggal -->
     <template #filter-left>
       <div class="filter-group">
-        <span class="filter-label">Periode</span>
-        <input
-          type="date"
-          v-model="filterState.startDate"
-          class="date-inp"
-          @change="fetchData"
-        />
+        <span class="filter-lbl">Periode</span>
+        <input v-model="filterState.startDate" type="date" class="date-inp" />
         <span class="filter-sep">s/d</span>
-        <input
-          type="date"
-          v-model="filterState.endDate"
-          class="date-inp"
-          @change="fetchData"
-        />
+        <input v-model="filterState.endDate" type="date" class="date-inp" />
       </div>
     </template>
 
@@ -295,26 +286,27 @@ const onCetakSelesai = () => {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
 }
-.filter-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: #555;
+.filter-lbl {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
   white-space: nowrap;
 }
 .filter-sep {
-  font-size: 11px;
-  color: #888;
+  font-size: 12px;
+  color: #9ca3af;
+  white-space: nowrap;
 }
 .date-inp {
-  height: 28px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 0 6px;
+  height: 32px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0 8px;
   font-size: 12px;
-  background: white;
   outline: none;
-  color: #212121;
+  width: 130px;
 }
 .date-inp:focus {
   border-color: #2e7d32;

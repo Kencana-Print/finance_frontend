@@ -50,6 +50,8 @@ const props = withDefaults(
     summaryLabel?: string;
     exportFn?: () => void | Promise<void>;
     fixedLayout?: boolean;
+    filterValues?: Record<string, any>;
+    autoRefresh?: boolean;
   }>(),
   {
     icon: () => IconTable,
@@ -69,6 +71,8 @@ const props = withDefaults(
     filterState: () => ({}),
     exportFn: undefined,
     fixedLayout: true,
+    filterValues: () => ({}),
+    autoRefresh: true,
   },
 );
 
@@ -82,6 +86,20 @@ const emit = defineEmits([
   "update:selected",
   "update:filterState",
 ]);
+
+let autoRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+
+watch(
+  () => props.filterValues,
+  () => {
+    if (!props.autoRefresh) return;
+    if (autoRefreshTimer) clearTimeout(autoRefreshTimer);
+    autoRefreshTimer = setTimeout(() => {
+      emit("refresh");
+    }, 300);
+  },
+  { deep: true },
+);
 
 const storageKey = computed(() => `finance_browse_${props.menuId}`);
 const loadState = () => {
@@ -855,14 +873,16 @@ watch(
 .filter-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   background: rgb(var(--v-theme-surface));
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   border-radius: 6px;
-  padding: 6px 12px;
+  padding: 8px 14px;
   flex-shrink: 0;
-  min-height: 48px;
+  min-height: 52px;
   flex-wrap: wrap;
+  row-gap: 6px;
+  column-gap: 10px;
 }
 .search-field {
   width: 160px;
@@ -1299,5 +1319,143 @@ watch(
 }
 .cfd-ok-btn:hover {
   opacity: 0.88;
+}
+
+/* ── Responsif ── */
+
+/* Tablet landscape (≤1280px) */
+@media (max-width: 1280px) {
+  .browse-content {
+    padding: 6px;
+    gap: 6px;
+  }
+  .filter-bar {
+    padding: 6px 10px;
+    min-height: 46px;
+    gap: 8px;
+  }
+  .search-field {
+    width: 140px;
+    min-width: 100px;
+  }
+  .base-table :deep(thead th) {
+    font-size: 10px !important;
+    height: 30px !important;
+  }
+  .base-table :deep(tbody td) {
+    font-size: 11px;
+    height: 26px !important;
+  }
+  .summary-bar-inner {
+    height: 28px;
+    padding: 4px 10px;
+  }
+  .summary-lbl {
+    font-size: 10px;
+  }
+  .summary-val {
+    font-size: 12px;
+  }
+  .pagination-bar {
+    padding: 3px 6px;
+    gap: 6px;
+  }
+  .page-btn {
+    min-width: 26px;
+    height: 26px;
+    font-size: 11px;
+  }
+  .page-info {
+    font-size: 11px;
+  }
+}
+
+/* Tablet portrait (≤1024px) */
+@media (max-width: 1024px) {
+  .browse-content {
+    padding: 4px;
+    gap: 4px;
+  }
+  .filter-bar {
+    padding: 5px 8px;
+    min-height: 40px;
+    gap: 6px;
+    row-gap: 5px;
+  }
+  .search-field {
+    width: 120px;
+    min-width: 90px;
+  }
+  /* Sembunyikan jump input dan page-of */
+  .jump-input,
+  .page-of {
+    display: none;
+  }
+  /* Pagination ringkas — hanya ikon + halaman aktif */
+  .page-btn:not(.icon-btn):not(.active) {
+    display: none;
+  }
+  .page-btn.active {
+    display: flex;
+  }
+  .per-page-wrap .page-info {
+    display: none;
+  }
+}
+
+/* Mobile (≤768px) */
+@media (max-width: 768px) {
+  .browse-content {
+    padding: 2px;
+    gap: 3px;
+  }
+  .filter-bar {
+    padding: 5px 6px;
+    min-height: unset;
+    gap: 5px;
+    row-gap: 4px;
+  }
+  .search-field {
+    width: 100px;
+    min-width: 80px;
+  }
+  /* Summary ringkas */
+  .summary-bar-inner {
+    padding: 3px 8px;
+    height: 26px;
+    gap: 8px;
+  }
+  .summary-lbl {
+    display: none;
+  } /* Hanya tampilkan nilai */
+  .summary-val {
+    font-size: 11px;
+  }
+  /* Pagination ringkas */
+  .pagination-bar {
+    flex-wrap: wrap;
+    gap: 3px;
+    padding: 3px 4px;
+  }
+  .per-page-select {
+    height: 26px;
+    font-size: 11px;
+  }
+  .page-btn {
+    min-width: 24px;
+    height: 24px;
+    font-size: 10px;
+  }
+  /* Header tabel lebih kompak */
+  .base-table :deep(thead th) {
+    font-size: 9px !important;
+    height: 28px !important;
+    padding: 0 5px !important;
+  }
+  .base-table :deep(tbody td) {
+    font-size: 10px;
+    height: 24px !important;
+    padding: 0 5px !important;
+  }
 }
 </style>

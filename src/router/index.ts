@@ -352,7 +352,6 @@ const router = createRouter({
         title: "Rekonsiliasi Bank",
       },
     },
-    // },
     // Pengajuan Transfer
     {
       path: "/transaksi/pengajuan-transfer",
@@ -428,94 +427,131 @@ const router = createRouter({
         title: "Terima Setoran",
       },
     },
-    // {
-    //   path: "/transaksi/terima-setoran/form/:nomor",
-    //   name: "TerimaSetoranForm",
-    //   component: () => import("@/views/transaksi/TerimaSetoranFormView.vue"),
-    //   meta: { requiresAuth: true, menuId: 29 },
-    // },
+    {
+      path: "/transaksi/terima-setoran",
+      name: "TerimaSetoranBrowse",
+      component: () => import("@/views/transaksi/TerimaSetoranView.vue"),
+      meta: {
+        layout: "DefaultLayout",
+        requiresAuth: true,
+        menuId: "29",
+        title: "Terima Setoran",
+      },
+    },
+    {
+      path: "/transaksi/terima-setoran/form/:nomor",
+      name: "TerimaSetoranForm",
+      component: () => import("@/views/transaksi/TerimaSetoranFormView.vue"),
+      meta: {
+        layout: "DefaultLayout",
+        requiresAuth: true,
+        menuId: "29",
+        title: "Terima Setoran Kasir",
+        browseRoute: "TerimaSetoranBrowse",
+      },
+    },
 
-    // ── Posting ───────────────────────────────────────────────────────
-    // {
-    //   path: "/posting/pembayaran-customer",
-    //   name: "PembayaranCustomer",
-    //   component: () => import("@/views/posting/PembayaranCustomerView.vue"),
-    //   meta: {
-    //     layout: "DefaultLayout",
-    //     requiresAuth: true,
-    //     menuId: "20",
-    //     title: "Pembayaran Customer",
-    //   },
-    // },
-    // {
-    //   path: "/posting/pembayaran-customer-kaosan",
-    //   name: "PembayaranCustomerKaosan",
-    //   component: () =>
-    //     import("@/views/posting/PembayaranCustomerKaosanView.vue"),
-    //   meta: {
-    //     layout: "DefaultLayout",
-    //     requiresAuth: true,
-    //     menuId: "21",
-    //     title: "Pembayaran Customer Kaosan",
-    //   },
-    // },
+    // ── Posting ──
+    {
+      path: "/posting/pembayaran-customer",
+      name: "PembayaranCustomerBrowse",
+      component: () => import("@/views/posting/PembayaranCustomerView.vue"),
+      meta: {
+        layout: "DefaultLayout",
+        requiresAuth: true,
+        menuId: "51",
+        title: "Pembayaran Customer",
+      },
+    },
+    {
+      path: "/posting/pembayaran-customer/form",
+      name: "PembayaranCustomerForm",
+      component: () => import("@/views/posting/PembayaranCustomerFormView.vue"),
+      meta: {
+        layout: "DefaultLayout",
+        requiresAuth: true,
+        menuId: "51",
+        title: "Posting Pembayaran Customer",
+        browseRoute: "PembayaranCustomerBrowse",
+      },
+    },
+    {
+      path: "/posting/pembayaran-cust-kaosan",
+      name: "PembayaranCustKaosanBrowse",
+      component: () => import("@/views/posting/PembayaranCustKaosanView.vue"),
+      meta: {
+        layout: "DefaultLayout",
+        requiresAuth: true,
+        menuId: "52",
+        title: "Pembayaran Customer Kaosan",
+      },
+    },
+    {
+      path: "/posting/pembayaran-cust-kaosan/form",
+      name: "PembayaranCustKaosanForm",
+      component: () =>
+        import("@/views/posting/PembayaranCustKaosanFormView.vue"),
+      meta: {
+        layout: "DefaultLayout",
+        requiresAuth: true,
+        menuId: "52",
+        title: "Posting Pembayaran Customer Kaosan",
+        browseRoute: "PembayaranCustKaosanBrowse",
+      },
+    },
 
-    // // ── Laporan ───────────────────────────────────────────────────────
-    // {
-    //   path: "/laporan/list-jurnal",
-    //   name: "LapListJurnal",
-    //   component: () => import("@/views/laporan/ListJurnalView.vue"),
-    //   meta: {
-    //     layout: "DefaultLayout",
-    //     requiresAuth: true,
-    //     menuId: "30",
-    //     title: "List Jurnal",
-    //   },
-    // },
-    // {
-    //   path: "/laporan/buku-besar",
-    //   name: "LapBukuBesar",
-    //   component: () => import("@/views/laporan/BukuBesarView.vue"),
-    //   meta: {
-    //     layout: "DefaultLayout",
-    //     requiresAuth: true,
-    //     menuId: "31",
-    //     title: "Buku Besar",
-    //   },
-    // },
-    // {
-    //   path: "/laporan/kasbon-belum-selesai",
-    //   name: "LapKasbonBelumSelesai",
-    //   component: () => import("@/views/laporan/KasbonBelumSelesaiView.vue"),
-    //   meta: {
-    //     layout: "DefaultLayout",
-    //     requiresAuth: true,
-    //     menuId: "32",
-    //     title: "Kasbon Belum Selesai",
-    //   },
-    // },
-    // {
-    //   path: "/laporan/rekonsiliasi-bank",
-    //   name: "LapRekonsiliasi",
-    //   component: () => import("@/views/laporan/LapRekonsiliasiBankView.vue"),
-    //   meta: {
-    //     layout: "DefaultLayout",
-    //     requiresAuth: true,
-    //     menuId: "33",
-    //     title: "Laporan Rekonsiliasi Bank",
-    //   },
-    // },
-    // {
-    //   path: "/laporan/stok-finance",
-    //   name: "LapStokFinance",
-    //   component: () => import("@/views/laporan/StokFinanceView.vue"),
-    //   meta: {
-    //     layout: "DefaultLayout",
-    //     requiresAuth: true,
-    //     menuId: "34",
-    //     title: "Stok Finance",
-    //   },
-    // },
+    // ── Laporan ──
+    {
+      path: "/laporan/list-jurnal",
+      name: "ListJurnal",
+      component: () => import("@/views/laporan/ListJurnalView.vue"),
+      meta: {
+        layout: "DefaultLayout",
+        requiresAuth: true,
+        // tidak ada menuId
+        title: "List Jurnal",
+      },
+    },
+    {
+      path: "/laporan/buku-besar",
+      name: "LapBukuBesar",
+      component: () => import("@/views/laporan/BukuBesarView.vue"),
+      meta: {
+        layout: "DefaultLayout",
+        requiresAuth: true,
+        title: "Buku Besar",
+      },
+    },
+    {
+      path: "/laporan/kasbon-belum-selesai",
+      name: "LapKasbonBelumSelesai",
+      component: () => import("@/views/laporan/KasbonBelumSelesaiView.vue"),
+      meta: {
+        layout: "DefaultLayout",
+        requiresAuth: true,
+        title: "Kasbon Belum Selesai",
+      },
+    },
+    {
+      path: "/laporan/rekonsiliasi-bank",
+      name: "LapRekonsiliasi",
+      component: () => import("@/views/laporan/LapRekonsiliasiBankView.vue"),
+      meta: {
+        layout: "DefaultLayout",
+        requiresAuth: true,
+        title: "Rekonsiliasi Bank",
+      },
+    },
+    {
+      path: "/laporan/stok-finance",
+      name: "LapStokFinance",
+      component: () => import("@/views/laporan/StokFinanceView.vue"),
+      meta: {
+        layout: "DefaultLayout",
+        requiresAuth: true,
+        title: "Stok Finance",
+      },
+    },
 
     // // ── Tools ─────────────────────────────────────────────────────────
     // {
@@ -566,7 +602,12 @@ router.beforeEach((to) => {
 
   // Hanya cek permission kalau menus sudah ada isinya
   const menuId = to.meta.menuId as string | undefined;
-  if (menuId && authStore.user?.menus?.length && !authStore.can(menuId, "view"))
+  if (
+    menuId &&
+    menuId !== "0" &&
+    authStore.user?.menus?.length &&
+    !authStore.can(menuId, "view")
+  )
     return { name: "Unauthorized", query: { from: to.fullPath } };
 });
 

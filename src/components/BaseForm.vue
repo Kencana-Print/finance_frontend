@@ -237,4 +237,71 @@ const emit = defineEmits([
   height: 100%;
   min-height: 0; /* ← wajib agar flex child bisa scroll */
 }
+
+/* ── Responsif ── */
+
+/* Tablet landscape (≤1280px) */
+@media (max-width: 1280px) {
+  .form-grid-container {
+    grid-template-columns: 280px 1fr;
+    gap: 12px;
+    padding: 10px;
+    height: calc(100vh - 110px);
+  }
+  .form-grid-container.three-column {
+    grid-template-columns: 240px 1fr 180px;
+  }
+}
+
+/* Tablet portrait (≤1024px) */
+@media (max-width: 1024px) {
+  .form-grid-container {
+    /* Stack kolom vertikal */
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto;
+    height: auto;
+    min-height: calc(100vh - 110px);
+    overflow-y: auto;
+    padding: 8px;
+    gap: 10px;
+  }
+  .form-grid-container.three-column {
+    grid-template-columns: 1fr !important;
+  }
+  .full-column {
+    height: auto;
+    min-height: 400px;
+    overflow: visible;
+  }
+  /* Kolom kiri tidak lagi fixed width */
+  .left-column {
+    min-height: unset;
+  }
+  .right-column {
+    min-width: unset;
+  }
+  /* Section card lebih kompak */
+  :deep(.desktop-form-section) {
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+}
+
+/* Mobile (≤768px) */
+@media (max-width: 768px) {
+  .form-grid-container {
+    padding: 4px;
+    gap: 6px;
+  }
+  /* Font sedikit lebih kecil */
+  .form-grid-container :deep(*) {
+    font-size: 10px !important;
+  }
+  :deep(.desktop-form-section) {
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    border-radius: 6px;
+  }
+  /* Header action lebih ringkas */
+}
 </style>

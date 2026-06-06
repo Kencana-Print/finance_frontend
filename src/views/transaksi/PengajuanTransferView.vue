@@ -63,6 +63,7 @@ watch([startDate, endDate], ([s, e]) => {
   } catch {
     /* silent */
   }
+  loadData();
 });
 
 // ── Data ──────────────────────────────────────────────────────────────
@@ -244,14 +245,11 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
   >
     <!-- ── Filter ── -->
     <template #filter-left>
-      <div class="d-flex align-center gap-2 flex-wrap">
+      <div class="filter-group">
         <span class="filter-lbl">Periode</span>
         <input v-model="startDate" type="date" class="date-inp" />
-        <span class="filter-lbl">s/d</span>
+        <span class="filter-sep">s/d</span>
         <input v-model="endDate" type="date" class="date-inp" />
-        <v-btn size="small" color="primary" variant="tonal" @click="loadData">
-          Tampilkan
-        </v-btn>
       </div>
     </template>
 
@@ -456,10 +454,21 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
 </template>
 
 <style scoped>
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap; /* Mencegah overflow jika layar menyempit */
+}
 .filter-lbl {
   font-size: 12px;
   font-weight: 600;
   color: #374151;
+  white-space: nowrap;
+}
+.filter-sep {
+  font-size: 12px;
+  color: #9ca3af;
   white-space: nowrap;
 }
 .date-inp {

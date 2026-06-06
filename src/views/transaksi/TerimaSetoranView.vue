@@ -57,6 +57,7 @@ watch([startDate, endDate, selectedCabang], ([s, e, c]) => {
   } catch {
     /* silent */
   }
+  loadData();
 });
 
 // ── Data ──────────────────────────────────────────────────────────────
@@ -210,20 +211,18 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
   >
     <!-- ── Filter ── -->
     <template #filter-left>
-      <div class="d-flex align-center gap-2 flex-wrap">
+      <div class="filter-group">
         <span class="filter-lbl">Periode</span>
         <input v-model="startDate" type="date" class="date-inp" />
-        <span class="filter-lbl">s/d</span>
+        <span class="filter-sep">s/d</span>
         <input v-model="endDate" type="date" class="date-inp" />
-        <span class="filter-lbl">Store</span>
+
+        <span class="filter-sep ml-2">Store</span>
         <select v-model="selectedCabang" class="cabang-select">
           <option v-for="c in cabangList" :key="c.kode" :value="c.kode">
             {{ c.kode }} - {{ c.nama }}
           </option>
         </select>
-        <v-btn size="small" color="primary" variant="tonal" @click="loadData">
-          Tampilkan
-        </v-btn>
       </div>
     </template>
 
@@ -324,10 +323,21 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
 </template>
 
 <style scoped>
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
 .filter-lbl {
   font-size: 12px;
   font-weight: 600;
   color: #374151;
+  white-space: nowrap;
+}
+.filter-sep {
+  font-size: 12px;
+  color: #9ca3af;
   white-space: nowrap;
 }
 .date-inp {
