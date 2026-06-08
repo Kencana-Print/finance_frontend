@@ -553,17 +553,42 @@ const router = createRouter({
       },
     },
 
-    // // ── Tools ─────────────────────────────────────────────────────────
-    // {
-    //   path: "/tools/users",
-    //   name: "MasterUser",
-    //   component: () => import("@/views/tools/UserView.vue"),
-    //   meta: {
-    //     layout: "DefaultLayout",
-    //     requiresAuth: true,
-    //     title: "Master User",
-    //   },
-    // },
+    // ── Tools ─────────────────────────────────────────────────────────
+    {
+      path: "/tools/users",
+      name: "MasterUser",
+      component: () => import("@/views/tools/MasterUserView.vue"),
+      meta: {
+        layout: "DefaultLayout",
+        requiresAuth: true,
+        menuId: "1",
+        title: "Master User",
+      },
+    },
+    {
+      path: "/tools/users/create",
+      name: "MasterUserCreate",
+      component: () => import("@/views/tools/MasterUserFormView.vue"),
+      meta: {
+        layout: "DefaultLayout",
+        requiresAuth: true,
+        menuId: "1",
+        title: "Tambah User",
+        browseRoute: "MasterUser",
+      },
+    },
+    {
+      path: "/tools/users/edit/:kode",
+      name: "MasterUserEdit",
+      component: () => import("@/views/tools/MasterUserFormView.vue"),
+      meta: {
+        layout: "DefaultLayout",
+        requiresAuth: true,
+        menuId: "1",
+        title: "Ubah User",
+        browseRoute: "MasterUser",
+      },
+    },
 
     // ── Error Pages ───────────────────────────────────────────────────
     {

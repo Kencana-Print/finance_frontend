@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
+import api from "@/api/axios";
+import { useToast } from "vue-toastification";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/authStore";
-import logoUrl from "@/assets/logo.png"; // 👈 Import logo di sini
+import logoUrl from "@/assets/logo.png";
 import {
   IconLayoutDashboard,
   IconCash,
-  IconArrowBarRight,
-  IconArrowBarLeft,
   IconChevronDown,
   IconLogout,
   IconUser,
@@ -30,12 +30,51 @@ import {
 
 const router = useRouter();
 const authStore = useAuthStore();
+const toast = useToast();
 const drawer = ref(true);
 const rail = ref(false);
 const isMobile = ref(false);
 
+// ── State Ganti Password ──────────────────────────────────────────────
+const showPasswordDialog = ref(false);
+const pwForm = ref({ oldPassword: "", newPassword: "", confirmPassword: "" });
+const pwSaving = ref(false);
+const pwError = ref("");
+
 const userName = computed(() => authStore.userName);
 const userCabang = computed(() => authStore.userCabang);
+
+const openPasswordDialog = () => {
+  pwForm.value = { oldPassword: "", newPassword: "", confirmPassword: "" };
+  pwError.value = "";
+  showPasswordDialog.value = true;
+};
+
+const submitChangePassword = async () => {
+  pwError.value = "";
+  if (!pwForm.value.oldPassword) {
+    pwError.value = "Password lama wajib diisi.";
+    return;
+  }
+  if (!pwForm.value.newPassword) {
+    pwError.value = "Password baru wajib diisi.";
+    return;
+  }
+  if (pwForm.value.newPassword !== pwForm.value.confirmPassword) {
+    pwError.value = "Konfirmasi password tidak cocok.";
+    return;
+  }
+  pwSaving.value = true;
+  try {
+    await api.post("/auth/change-password", pwForm.value);
+    showPasswordDialog.value = false;
+    toast.success("Password berhasil diganti.");
+  } catch (e: any) {
+    pwError.value = e.response?.data?.message || "Gagal mengganti password.";
+  } finally {
+    pwSaving.value = false;
+  }
+};
 
 const logout = () => {
   authStore.logout();
@@ -200,7 +239,7 @@ const menus = [
         menuId: "51",
       },
       {
-        title: "Pembayaran Customer Kaosan",
+        title: "Pembayaran Cust Kaosan",
         icon: IconReceipt2,
         route: "/posting/pembayaran-cust-kaosan",
         menuId: "52",
@@ -253,11 +292,38 @@ const menus = [
         title: "Master User",
         icon: IconUser,
         route: "/tools/users",
-        menuId: null,
+        menuId: "1",
       },
     ],
   },
 ];
+
+// ── Filter Menu Berdasarkan Hak Akses ─────────────────────────────────
+const filteredMenus = computed(() => {
+  return (
+    menus
+      .map((menu) => {
+        if (menu.children) {
+          const allowedChildren = menu.children.filter(
+            (child) => !child.menuId || authStore.can(child.menuId, "view"),
+          );
+          return { ...menu, children: allowedChildren };
+        }
+
+        if (menu.menuId && !authStore.can(menu.menuId, "view")) {
+          return null;
+        }
+
+        return menu;
+      })
+      // 1. Tambahkan type predicate 'as NonNullable<...>' agar TS tahu hasilnya tidak null
+      .filter((menu): menu is NonNullable<typeof menu> => {
+        if (!menu) return false;
+        if (menu.children && menu.children.length === 0) return false;
+        return true;
+      })
+  );
+});
 
 // Expand state per group
 const openGroups = ref<Record<string, boolean>>({});
@@ -279,6 +345,7 @@ const toggleGroup = (title: string) => {
       :permanent="!isMobile"
       class="finance-drawer"
       width="240"
+      theme="dark"
     >
       <div class="drawer-brand" :class="{ 'rail-brand': rail }">
         <div class="brand-logo">
@@ -295,7 +362,7 @@ const toggleGroup = (title: string) => {
       <v-divider class="mx-3 mb-1" />
 
       <v-list density="compact" nav class="px-2">
-        <template v-for="menu in menus" :key="menu.title">
+        <template v-for="menu in filteredMenus" :key="menu.title">
           <v-list-item
             v-if="!menu.children"
             :to="menu.route"
@@ -351,9 +418,7 @@ const toggleGroup = (title: string) => {
                 class="nav-children"
               >
                 <v-list-item
-                  v-for="child in menu.children.filter(
-                    (c) => !c.menuId || authStore.can(c.menuId, 'view'),
-                  )"
+                  v-for="child in menu.children"
                   :key="child.title"
                   :to="child.route"
                   rounded="lg"
@@ -377,32 +442,6 @@ const toggleGroup = (title: string) => {
           </template>
         </template>
       </v-list>
-
-      <template #append>
-        <v-divider class="mx-3" />
-        <div class="drawer-footer">
-          <div v-if="isMobile || !rail" class="user-info">
-            <div class="user-avatar">
-              {{ userName.charAt(0).toUpperCase() }}
-            </div>
-            <div class="user-details">
-              <div class="user-name" :title="userName">{{ userName }}</div>
-              <div class="user-cab" :title="userCabang">{{ userCabang }}</div>
-            </div>
-          </div>
-          <v-btn
-            variant="text"
-            size="small"
-            color="error"
-            @click="logout"
-            class="logout-btn"
-            :icon="!isMobile && rail"
-          >
-            <IconLogout :size="16" :stroke-width="1.8" />
-            <span v-if="isMobile || !rail" class="ml-1">Keluar</span>
-          </v-btn>
-        </div>
-      </template>
     </v-navigation-drawer>
 
     <v-app-bar flat class="finance-appbar" height="52">
@@ -415,24 +454,50 @@ const toggleGroup = (title: string) => {
       </v-app-bar-title>
 
       <template #append>
-        <div class="appbar-user">
-          <div class="appbar-avatar">
-            {{ userName.charAt(0).toUpperCase() }}
-          </div>
-          <div class="appbar-info">
-            <div class="appbar-name">{{ userName }}</div>
-            <div class="appbar-cab">{{ userCabang }}</div>
-          </div>
-        </div>
-        <v-btn
-          variant="text"
-          size="small"
-          color="error"
-          @click="logout"
-          class="mr-2"
-        >
-          <IconLogout :size="17" :stroke-width="1.8" />
-        </v-btn>
+        <v-menu>
+          <template #activator="{ props }">
+            <div class="appbar-user-btn" v-bind="props">
+              <div class="appbar-avatar">
+                {{ userName.charAt(0).toUpperCase() }}
+              </div>
+              <div class="appbar-info">
+                <div class="appbar-name">{{ userName }}</div>
+                <div class="appbar-cab">{{ userCabang }}</div>
+              </div>
+              <IconChevronDown :size="14" class="appbar-chevron" />
+            </div>
+          </template>
+
+          <v-list density="compact" class="user-menu">
+            <v-list-item @click="openPasswordDialog">
+              <template #prepend>
+                <IconLock
+                  :size="15"
+                  :stroke-width="1.8"
+                  class="mr-2"
+                  style="color: #2e7d32"
+                />
+              </template>
+              <v-list-item-title style="font-size: 13px"
+                >Ganti Password</v-list-item-title
+              >
+            </v-list-item>
+            <v-divider class="my-1" />
+            <v-list-item @click="logout">
+              <template #prepend>
+                <IconLogout
+                  :size="15"
+                  :stroke-width="1.8"
+                  class="mr-2"
+                  style="color: #c62828"
+                />
+              </template>
+              <v-list-item-title style="font-size: 13px; color: #c62828"
+                >Keluar</v-list-item-title
+              >
+            </v-list-item>
+          </v-list>
+        </v-menu>
       </template>
     </v-app-bar>
 
@@ -440,6 +505,64 @@ const toggleGroup = (title: string) => {
       <router-view />
     </v-main>
   </v-app>
+
+  <v-dialog v-model="showPasswordDialog" max-width="380" persistent>
+    <v-card rounded="lg">
+      <v-card-title class="pw-dialog-title">
+        <IconLock :size="18" :stroke-width="1.8" color="#2e7d32" />
+        Ganti Password
+      </v-card-title>
+      <v-card-text class="pa-4 pt-2">
+        <div class="pw-field">
+          <label class="pw-lbl">Password Lama</label>
+          <input
+            v-model="pwForm.oldPassword"
+            type="password"
+            class="pw-inp"
+            placeholder="Masukkan password lama"
+            autocomplete="current-password"
+          />
+        </div>
+        <div class="pw-field">
+          <label class="pw-lbl">Password Baru</label>
+          <input
+            v-model="pwForm.newPassword"
+            type="password"
+            class="pw-inp"
+            placeholder="Masukkan password baru"
+            autocomplete="new-password"
+          />
+        </div>
+        <div class="pw-field">
+          <label class="pw-lbl">Ulangi Password Baru</label>
+          <input
+            v-model="pwForm.confirmPassword"
+            type="password"
+            class="pw-inp"
+            placeholder="Ketik ulang password baru"
+            autocomplete="new-password"
+            @keydown.enter="submitChangePassword"
+          />
+        </div>
+        <div v-if="pwError" class="pw-error">{{ pwError }}</div>
+      </v-card-text>
+      <v-card-actions class="pa-4 pt-0">
+        <v-spacer />
+        <v-btn variant="text" size="small" @click="showPasswordDialog = false"
+          >Batal</v-btn
+        >
+        <v-btn
+          color="primary"
+          variant="flat"
+          size="small"
+          :loading="pwSaving"
+          @click="submitChangePassword"
+        >
+          Simpan
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <style scoped>
@@ -458,14 +581,12 @@ const toggleGroup = (title: string) => {
   transition: padding 0.2s ease;
 }
 
-/* 👈 Tambahan styling untuk memusatkan logo saat rail aktif */
 .rail-brand {
   padding-left: 0 !important;
   padding-right: 0 !important;
   justify-content: center !important;
 }
 
-/* 👈 Styling box putih (bisa diganti transparan) khusus logo */
 .brand-logo {
   width: 34px;
   height: 34px;
@@ -481,7 +602,7 @@ const toggleGroup = (title: string) => {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  padding: 4px; /* Memberi jarak agar logo tidak nabrak tepi box */
+  padding: 4px;
 }
 
 .brand-title {
@@ -492,113 +613,30 @@ const toggleGroup = (title: string) => {
 }
 .brand-sub {
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.65);
 }
 
 /* Nav items */
 .nav-icon {
-  color: rgba(255, 255, 255, 0.65);
   flex-shrink: 0;
-}
-.nav-title {
-  font-size: 12px !important;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.85);
 }
 .nav-group-header {
   cursor: pointer;
-}
-.nav-group-header:hover .nav-icon,
-.nav-group-header:hover .nav-title {
-  color: white !important;
-  opacity: 1;
 }
 
 .nav-children {
   padding-left: 8px;
 }
 .nav-child-icon {
-  color: rgba(255, 255, 255, 0.5);
   flex-shrink: 0;
 }
 .nav-child-title {
-  font-size: 11px !important;
-  color: rgba(255, 255, 255, 0.75);
-}
-.nav-child-item:hover .nav-child-icon,
-.nav-child-item:hover .nav-child-title {
-  color: white !important;
-  opacity: 1;
+  font-size: 12px !important;
 }
 
 /* Active state */
 :deep(.nav-active) {
   background: rgba(255, 255, 255, 0.15) !important;
-}
-:deep(.nav-active .nav-icon),
-:deep(.nav-active .nav-title),
-:deep(.nav-active .nav-child-icon),
-:deep(.nav-active .nav-child-title) {
-  color: white !important;
-  opacity: 1;
-}
-
-/* Drawer footer */
-.drawer-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  gap: 8px;
-}
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  min-width: 0;
-}
-.user-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  font-size: 12px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.user-details {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  flex: 1;
-}
-.user-name {
-  font-size: 11px;
-  font-weight: 600;
-  color: white;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-height: 1.2;
-}
-.user-cab {
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.55);
-}
-.logout-btn {
-  color: rgba(255, 255, 255, 0.7) !important;
-  flex-shrink: 0;
-}
-.logout-btn:hover {
-  color: #ef9a9a !important;
 }
 
 /* ── App Bar ── */
@@ -608,37 +646,9 @@ const toggleGroup = (title: string) => {
   box-shadow: 0 1px 4px rgba(46, 125, 50, 0.1) !important;
 }
 .appbar-title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: #2e7d32;
-}
-.appbar-user {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-right: 4px;
-}
-.appbar-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #2e7d32;
-  color: white;
-  font-size: 12px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.appbar-name {
-  font-size: 12px;
-  font-weight: 600;
-  color: #1a1a1a;
-  line-height: 1.3;
-}
-.appbar-cab {
-  font-size: 10px;
-  color: rgba(0, 0, 0, 0.45);
 }
 
 /* ── Main ── */
@@ -657,36 +667,142 @@ const toggleGroup = (title: string) => {
   opacity: 0;
 }
 
+/* Sembunyikan content di drawer saat rail aktif */
 .finance-drawer :deep(.v-list-item__content) {
   display: none;
 }
 .finance-drawer:not(.v-navigation-drawer--rail) :deep(.v-list-item__content) {
   display: flex;
 }
-.finance-drawer :deep(.v-list-item-title) {
-  color: rgba(255, 255, 255, 0.85) !important;
+
+/* ── User menu dropdown ── */
+.user-menu {
+  min-width: 170px !important;
+}
+
+/* ── Password dialog ── */
+.pw-dialog-title {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  border-top: 3px solid #2e7d32;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 16px 12px;
+}
+.pw-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+.pw-field:last-of-type {
+  margin-bottom: 0;
+}
+.pw-lbl {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b5563;
+}
+.pw-inp {
+  height: 36px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0 10px;
+  font-size: 13px;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+.pw-inp:focus {
+  border-color: #2e7d32;
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+}
+.pw-error {
+  font-size: 12px;
+  color: #c62828;
+  font-weight: 600;
+  background: #ffebee;
+  border-radius: 4px;
+  padding: 8px 10px;
+  margin-top: 10px;
+}
+
+/* ── Appbar user button ── */
+.appbar-user-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: 8px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.appbar-user-btn:hover {
+  background: rgba(46, 125, 50, 0.08);
+}
+.appbar-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #2e7d32;
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.appbar-info {
+  display: flex;
+  flex-direction: column;
+}
+.appbar-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  line-height: 1.2;
+}
+.appbar-cab {
+  font-size: 11px;
+  color: #6b7280;
+}
+.appbar-chevron {
+  color: #9ca3af;
+  margin-left: 2px;
+}
+
+.finance-drawer.v-navigation-drawer--rail :deep(.v-list-item__content) {
+  display: none !important;
+}
+.finance-drawer:not(.v-navigation-drawer--rail) :deep(.v-list-item__content) {
+  display: grid !important; /* Vuetify 3 defaultnya pakai grid, bukan flex */
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 /* ── Responsif DefaultLayout ── */
-@media (max-width: 1024px) {
-  .appbar-info {
+@media (max-width: 768px) {
+  .appbar-info,
+  .appbar-chevron {
     display: none;
   }
-}
-
-@media (max-width: 768px) {
-  .appbar-user {
-    display: none;
+  .appbar-user-btn {
+    margin-right: 4px;
+    padding: 4px;
   }
   .appbar-title {
-    font-size: 12px;
+    font-size: 13px;
   }
   .finance-drawer {
     width: 240px !important;
   }
-  /* Pastikan konten drawer tampil penuh */
+  /* Kembalikan tampilan konten menu di mobile */
   .finance-drawer :deep(.v-list-item__content) {
-    display: flex !important;
+    display: grid !important;
+    opacity: 1 !important;
+    visibility: visible !important;
   }
 }
 </style>

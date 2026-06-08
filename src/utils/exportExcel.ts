@@ -3847,3 +3847,70 @@ export const exportStokFinance = async (items: any[], cabang: string) => {
   const buf = await wb.xlsx.writeBuffer();
   saveAs(new Blob([buf]), `StokFinance_${cabang}.xlsx`);
 };
+
+export const exportMasterUser = async (items: any[]) => {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Master User");
+
+  const borderAll: Partial<ExcelJS.Borders> = {
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" },
+  };
+  const headerFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF2E7D32" },
+  };
+  const headerFont: Partial<ExcelJS.Font> = {
+    bold: true,
+    color: { argb: "FFFFFFFF" },
+    size: 10,
+  };
+
+  const setH = (cell: ExcelJS.Cell, val: string) => {
+    cell.value = val;
+    cell.font = headerFont;
+    cell.fill = headerFill;
+    cell.border = borderAll;
+    cell.alignment = { vertical: "middle", horizontal: "center" };
+  };
+  const setC = (
+    cell: ExcelJS.Cell,
+    val: any,
+    align: "left" | "center" | "right" = "left",
+  ) => {
+    cell.value = val;
+    cell.border = borderAll;
+    cell.font = { size: 10 };
+    cell.alignment = { vertical: "middle", horizontal: align };
+  };
+
+  ws.mergeCells("A1:D1");
+  ws.getCell("A1").value = "Master User";
+  ws.getCell("A1").font = { bold: true, size: 12 };
+  ws.addRow([]);
+
+  const cols = ["Kode", "Nama", "Cabang", "Aktif"];
+  const hRow = ws.addRow(cols);
+  hRow.eachCell((cell, i) => setH(cell, cols[i - 1]));
+  hRow.height = 20;
+
+  for (const r of items) {
+    const row = ws.addRow([]);
+    setC(row.getCell(1), r.Kode);
+    setC(row.getCell(2), r.Nama);
+    setC(row.getCell(3), r.Cabang, "center");
+    setC(row.getCell(4), r.Aktif, "center");
+    row.height = 16;
+  }
+
+  ws.getColumn(1).width = 14;
+  ws.getColumn(2).width = 30;
+  ws.getColumn(3).width = 10;
+  ws.getColumn(4).width = 10;
+
+  const buf = await wb.xlsx.writeBuffer();
+  saveAs(new Blob([buf]), "Master_User.xlsx");
+};
