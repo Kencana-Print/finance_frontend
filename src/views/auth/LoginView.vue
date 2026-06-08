@@ -5,6 +5,9 @@ import { useAuthStore } from "@/stores/authStore";
 import { useToast } from "vue-toastification";
 import { IconEye, IconEyeOff, IconLogin } from "@tabler/icons-vue";
 
+import logoUrl from "@/assets/logo.png";
+import bgImage from "@/assets/bg-finance.jpg";
+
 const router = useRouter();
 const authStore = useAuthStore();
 const toast = useToast();
@@ -58,6 +61,10 @@ const onUsernameEnter = () => {
   <div class="login-page">
     <!-- Background decorative -->
     <div class="login-bg">
+      <div
+        class="bg-img-overlay"
+        :style="{ backgroundImage: `url(${bgImage})` }"
+      />
       <div class="bg-circle bg-circle-1" />
       <div class="bg-circle bg-circle-2" />
       <div class="bg-circle bg-circle-3" />
@@ -68,7 +75,7 @@ const onUsernameEnter = () => {
       <div class="login-left">
         <div class="brand-area">
           <div class="brand-logo-wrap">
-            <span class="brand-rupiah">Rp</span>
+            <img :src="logoUrl" alt="Logo" class="brand-logo-img" />
           </div>
           <h1 class="brand-name">FINANCE</h1>
           <p class="brand-tagline">Sistem Manajemen Keuangan</p>
@@ -163,7 +170,7 @@ const onUsernameEnter = () => {
           </div>
 
           <div class="login-footer">
-            <span>© {{ new Date().getFullYear() }} Finance System</span>
+            <span>© {{ new Date().getFullYear() }} IT Kencana Print</span>
           </div>
         </div>
       </div>
@@ -178,10 +185,25 @@ const onUsernameEnter = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #0d2b0d;
+  background: linear-gradient(
+    135deg,
+    rgba(13, 43, 13, 0.82) 0%,
+    rgba(27, 94, 32, 0.78) 100%
+  );
   position: relative;
   overflow: hidden;
   font-family: "Inter", system-ui, sans-serif;
+}
+
+.bg-img-overlay {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.18;
+  filter: blur(1px);
+  transform: scale(1.05);
 }
 
 /* Decorative circles */
@@ -255,10 +277,10 @@ const onUsernameEnter = () => {
   justify-content: center;
   margin-bottom: 16px;
 }
-.brand-rupiah {
-  font-size: 26px;
-  font-weight: 800;
-  color: #a5d6a7;
+.brand-logo-img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
 }
 .brand-name {
   font-size: 28px;
