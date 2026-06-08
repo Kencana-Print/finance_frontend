@@ -227,6 +227,49 @@ const removeRow = (idx: number) => {
   form.value.detail.splice(idx, 1);
 };
 
+// ── Format nominal (separator ribuan) ────────────────────────────────
+const parseNum = (v: string) =>
+  Number(String(v).replace(/\./g, "").replace(",", ".")) || 0;
+
+const formatNum = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
+
+// Untuk input nominal kasbon
+const nominalDisplay = computed({
+  get: () => formatNum(form.value.nominal),
+  set: (val: string) => {
+    form.value.nominal = parseNum(val);
+  },
+});
+
+// Handler untuk input detail nilai — format on blur, parse on input
+const onNilaiInput = (d: UangMukaFormDetail, e: Event) => {
+  const raw = parseNum((e.target as HTMLInputElement).value);
+  d.nilai = raw;
+  hitungTotal(d);
+};
+
+const onNilaiBlur = (d: UangMukaFormDetail, e: Event) => {
+  (e.target as HTMLInputElement).value = formatNum(d.nilai);
+};
+
+const onNilaiFocus = (d: UangMukaFormDetail, e: Event) => {
+  (e.target as HTMLInputElement).value = d.nilai ? String(d.nilai) : "";
+};
+
+const onNominalInput = (e: Event) => {
+  form.value.nominal = parseNum((e.target as HTMLInputElement).value);
+};
+
+const onNominalBlur = (e: Event) => {
+  (e.target as HTMLInputElement).value = formatNum(form.value.nominal);
+};
+
+const onNominalFocus = (e: Event) => {
+  (e.target as HTMLInputElement).value = form.value.nominal
+    ? String(form.value.nominal)
+    : "";
+};
+
 // ── Search Modal: Pengajuan ───────────────────────────────────────────
 const showPengajuanModal = ref(false);
 const searchPjh = ref("");
@@ -685,11 +728,14 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
                 </td>
                 <td>
                   <input
-                    v-model.number="d.nilai"
-                    type="number"
+                    :value="formatNum(d.nilai)"
+                    type="text"
+                    inputmode="numeric"
                     class="cell-inp tr"
                     :disabled="d.reject"
-                    @input="hitungTotal(d)"
+                    @focus="onNilaiFocus(d, $event)"
+                    @input="onNilaiInput(d, $event)"
+                    @blur="onNilaiBlur(d, $event)"
                   />
                 </td>
                 <td class="tr cell-total">{{ fmt(d.total) }}</td>
@@ -786,9 +832,13 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
               >Nominal Kasbon <span class="req">*</span></label
             >
             <input
-              v-model.number="form.nominal"
-              type="number"
+              :value="formatNum(form.nominal)"
+              type="text"
+              inputmode="numeric"
               class="nominal-inp"
+              @focus="onNominalFocus($event)"
+              @input="onNominalInput($event)"
+              @blur="onNominalBlur($event)"
             />
           </div>
         </div>
@@ -1268,5 +1318,11 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
 }
 .info-val {
   color: #111827;
+}
+
+.cell-inp[disabled] {
+  background: #f5f5f5;
+  color: #999;
+  cursor: not-allowed;
 }
 </style>

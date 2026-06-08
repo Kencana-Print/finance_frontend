@@ -293,6 +293,12 @@ watch([activeTab, chartData], async ([tab]) => {
 });
 
 const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
+const fmtDate = (v: string) => {
+  if (!v) return "-";
+  const [y, m, d] = v.split("-");
+  return `${d}-${m}-${y}`;
+};
+
 const doExport = () =>
   exportListJurnal(
     items.value,
@@ -397,6 +403,9 @@ const doExportPivot = async () => {
     </template>
     <template #item.Kredit="{ value }">
       <span class="num-cell">{{ value ? fmt(value) : "" }}</span>
+    </template>
+    <template #item.Tanggal="{ value }">
+      <span>{{ fmtDate(value) }}</span>
     </template>
 
     <template #summary-row="{ filteredItems }">

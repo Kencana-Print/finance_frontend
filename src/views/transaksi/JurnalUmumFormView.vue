@@ -52,6 +52,31 @@ const totalKredit = computed(() =>
 const isBalance = computed(() => totalDebet.value === totalKredit.value);
 const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
 
+const parseNum = (v: string) =>
+  Number(String(v).replace(/\./g, "").replace(",", ".")) || 0;
+
+const formatNum = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
+
+const onDebetInput = (d: JurnalUmumFormDetail, e: Event) => {
+  d.debet = parseNum((e.target as HTMLInputElement).value);
+};
+const onDebetBlur = (d: JurnalUmumFormDetail, e: Event) => {
+  (e.target as HTMLInputElement).value = formatNum(d.debet);
+};
+const onDebetFocus = (d: JurnalUmumFormDetail, e: Event) => {
+  (e.target as HTMLInputElement).value = d.debet ? String(d.debet) : "";
+};
+
+const onKreditInput = (d: JurnalUmumFormDetail, e: Event) => {
+  d.kredit = parseNum((e.target as HTMLInputElement).value);
+};
+const onKreditBlur = (d: JurnalUmumFormDetail, e: Event) => {
+  (e.target as HTMLInputElement).value = formatNum(d.kredit);
+};
+const onKreditFocus = (d: JurnalUmumFormDetail, e: Event) => {
+  (e.target as HTMLInputElement).value = d.kredit ? String(d.kredit) : "";
+};
+
 // ── onMounted ─────────────────────────────────────────────────────────
 onMounted(async () => {
   isLoading.value = true;
@@ -318,10 +343,10 @@ const confirmClose = () => {
                 <th style="min-width: 200px">Uraian</th>
                 <th style="width: 120px">Debet</th>
                 <th style="width: 120px">Kredit</th>
-                <th style="min-width: 100px">Account</th>
-                <th style="min-width: 150px">Nama Account</th>
-                <th style="min-width: 110px">Cost Center</th>
-                <th style="min-width: 110px">Detail CC</th>
+                <th style="min-width: 120px">Account</th>
+                <th style="min-width: 220px">Nama Account</th>
+                <th style="min-width: 200px">Cost Center</th>
+                <th style="min-width: 200px">Detail CC</th>
                 <th style="width: 28px"></th>
               </tr>
             </thead>
@@ -341,20 +366,28 @@ const confirmClose = () => {
                 <!-- Debet -->
                 <td>
                   <input
-                    v-model.number="d.debet"
-                    type="number"
+                    :value="formatNum(d.debet)"
+                    type="text"
+                    inputmode="numeric"
                     class="cell-inp tr"
                     style="min-width: 90px"
+                    @focus="onDebetFocus(d, $event)"
+                    @input="onDebetInput(d, $event)"
+                    @blur="onDebetBlur(d, $event)"
                   />
                 </td>
 
                 <!-- Kredit -->
                 <td>
                   <input
-                    v-model.number="d.kredit"
-                    type="number"
+                    :value="formatNum(d.kredit)"
+                    type="text"
+                    inputmode="numeric"
                     class="cell-inp tr"
                     style="min-width: 90px"
+                    @focus="onKreditFocus(d, $event)"
+                    @input="onKreditInput(d, $event)"
+                    @blur="onKreditBlur(d, $event)"
                   />
                 </td>
 
@@ -364,9 +397,10 @@ const confirmClose = () => {
                     <span
                       class="cell-text"
                       style="
-                        max-width: 62px;
+                        max-width: 80px;
                         overflow: hidden;
                         text-overflow: ellipsis;
+                        white-space: nowrap;
                       "
                     >
                       {{ d.rekkode || "-" }}
@@ -383,7 +417,15 @@ const confirmClose = () => {
 
                 <!-- Nama Account -->
                 <td>
-                  <span class="cell-text" :class="{ 'text-error': !d.reknama }">
+                  <span
+                    class="cell-text"
+                    :class="{ 'text-error': !d.reknama }"
+                    style="
+                      min-width: 180px;
+                      display: block;
+                      white-space: nowrap;
+                    "
+                  >
                     {{ d.reknama || "(wajib)" }}
                   </span>
                 </td>
@@ -394,9 +436,10 @@ const confirmClose = () => {
                     <span
                       class="cell-text"
                       style="
-                        max-width: 70px;
+                        max-width: 155px;
                         overflow: hidden;
                         text-overflow: ellipsis;
+                        white-space: nowrap;
                       "
                     >
                       {{ d.ccnama || "-" }}
@@ -417,9 +460,10 @@ const confirmClose = () => {
                     <span
                       class="cell-text"
                       style="
-                        max-width: 70px;
+                        max-width: 155px;
                         overflow: hidden;
                         text-overflow: ellipsis;
+                        white-space: nowrap;
                       "
                     >
                       {{ d.dcnama || "-" }}

@@ -224,6 +224,12 @@ const detailRowClass = (d: PengajuanTransferDetailRow) => {
 };
 
 const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
+
+const fmtDate = (v: string) => {
+  if (!v) return "-";
+  const [y, m, d] = v.split("-");
+  return `${d}-${m}-${y}`;
+};
 </script>
 
 <template>
@@ -344,6 +350,10 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
       >
     </template>
 
+    <template #item.Tanggal="{ value }">
+      <span>{{ fmtDate(value) }}</span>
+    </template>
+
     <!-- ── Expanded detail ── -->
     <template #detail="{ item }">
       <div class="detail-wrap">
@@ -381,7 +391,9 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
               <td>{{ d.NoTransaksi || "-" }}</td>
               <td class="tr">{{ fmt(d.Nominal) }}</td>
               <td>{{ d.Keterangan }}</td>
-              <td class="tc">{{ d.TglRealisasi || "-" }}</td>
+              <td class="tc">
+                {{ d.TglRealisasi ? fmtDate(d.TglRealisasi) : "-" }}
+              </td>
               <td>{{ d.Account || "-" }}</td>
               <td>{{ d.NamaAccount || "-" }}</td>
               <td>{{ d.CcNama || "-" }}</td>

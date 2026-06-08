@@ -216,6 +216,11 @@ const onConfirmClose = () => {
 };
 
 const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
+
+const parseNum = (v: string) =>
+  Number(String(v).replace(/\./g, "").replace(",", ".")) || 0;
+
+const formatNum = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
 </script>
 
 <template>
@@ -374,12 +379,34 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
                 <td class="td-input">
                   <!-- Delphi: clnominalv — editable hanya jika diVerifikasi -->
                   <input
-                    v-model.number="d.NominalVerifikasi"
-                    type="number"
+                    :value="formatNum(d.NominalVerifikasi)"
+                    type="text"
+                    inputmode="numeric"
                     class="num-inp"
                     :disabled="!diVerifikasi"
-                    @change="onNominalvChange(idx)"
-                    @input="onNominalvChange(idx)"
+                    @focus="
+                      (e) => {
+                        (e.target as HTMLInputElement).value =
+                          d.NominalVerifikasi
+                            ? String(d.NominalVerifikasi)
+                            : '';
+                      }
+                    "
+                    @input="
+                      (e) => {
+                        d.NominalVerifikasi = parseNum(
+                          (e.target as HTMLInputElement).value,
+                        );
+                        onNominalvChange(idx);
+                      }
+                    "
+                    @blur="
+                      (e) => {
+                        (e.target as HTMLInputElement).value = formatNum(
+                          d.NominalVerifikasi,
+                        );
+                      }
+                    "
                   />
                 </td>
                 <td class="tc">

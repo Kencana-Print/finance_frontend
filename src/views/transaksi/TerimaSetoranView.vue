@@ -190,6 +190,12 @@ const rowPropsFn = (data: any) => {
 };
 
 const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
+
+const fmtDate = (v: string) => {
+  if (!v) return "-";
+  const [y, m, d] = v.split("-");
+  return `${d}-${m}-${y}`;
+};
 </script>
 
 <template>
@@ -260,6 +266,14 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
         </template>
         Export Detail
       </v-btn>
+    </template>
+
+    <template #item.TglSetor="{ value }">
+      <span>{{ fmtDate(value) }}</span>
+    </template>
+
+    <template #item.TglVerifikasi="{ value }">
+      <span>{{ fmtDate(value) }}</span>
     </template>
 
     <!-- ── Expanded detail ── -->

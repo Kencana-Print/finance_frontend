@@ -202,6 +202,12 @@ const totalNominal = computed(() =>
 
 const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
 
+const fmtDate = (v: string) => {
+  if (!v) return "-";
+  const [y, m, d] = v.split("-");
+  return `${d}-${m}-${y}`;
+};
+
 // ── Export ────────────────────────────────────────────────────────────
 const doExport = () =>
   exportKasbonBelumSelesai(
@@ -286,6 +292,10 @@ const doExportDetail = () =>
     <!-- ── Custom cell Nominal ── -->
     <template #item.Nominal="{ value }">
       <span class="num-cell">{{ value ? fmt(value) : "" }}</span>
+    </template>
+
+    <template #item.Tanggal="{ value }">
+      <span>{{ fmtDate(value) }}</span>
     </template>
 
     <!-- ── Expanded detail ── -->

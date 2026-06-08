@@ -48,6 +48,24 @@ const form = ref({
 
 const originalForm = ref<any>(null);
 
+// ── Format nominal (separator ribuan) ────────────────────────────────
+const parseNum = (v: string) =>
+  Number(String(v).replace(/\./g, "").replace(",", ".")) || 0;
+
+const formatNum = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
+
+const onNominalInput = (d: BkmFormDetail, e: Event) => {
+  d.nominal = parseNum((e.target as HTMLInputElement).value);
+};
+
+const onNominalBlur = (d: BkmFormDetail, e: Event) => {
+  (e.target as HTMLInputElement).value = formatNum(d.nominal);
+};
+
+const onNominalFocus = (d: BkmFormDetail, e: Event) => {
+  (e.target as HTMLInputElement).value = d.nominal ? String(d.nominal) : "";
+};
+
 // ── Lookup ─────────────────────────────────────────────────────────────
 const accountOptions = ref<{ kode: string; nama: string; cabang: string }[]>(
   [],
@@ -451,10 +469,14 @@ const confirmClose = () => {
 
                 <td>
                   <input
-                    v-model.number="d.nominal"
-                    type="number"
+                    :value="formatNum(d.nominal)"
+                    type="text"
+                    inputmode="numeric"
                     class="cell-inp tr"
                     style="min-width: 100px"
+                    @focus="onNominalFocus(d, $event)"
+                    @input="onNominalInput(d, $event)"
+                    @blur="onNominalBlur(d, $event)"
                   />
                 </td>
 

@@ -500,6 +500,34 @@ const confirmClose = () => {
 
 const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
 
+// ── Format nominal (separator ribuan) ────────────────────────────────
+const parseNum = (v: string) =>
+  Number(String(v).replace(/\./g, "").replace(",", ".")) || 0;
+
+const formatNum = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
+
+const onHargaInput = (d: PenyelesaianDetail, e: Event) => {
+  d.harga = parseNum((e.target as HTMLInputElement).value);
+  hitungTotal(d);
+};
+const onHargaBlur = (d: PenyelesaianDetail, e: Event) => {
+  (e.target as HTMLInputElement).value = formatNum(d.harga);
+};
+const onHargaFocus = (d: PenyelesaianDetail, e: Event) => {
+  (e.target as HTMLInputElement).value = d.harga ? String(d.harga) : "";
+};
+
+const onQtyInput = (d: PenyelesaianDetail, e: Event) => {
+  d.qty = parseNum((e.target as HTMLInputElement).value);
+  hitungTotal(d);
+};
+const onQtyBlur = (d: PenyelesaianDetail, e: Event) => {
+  (e.target as HTMLInputElement).value = formatNum(d.qty);
+};
+const onQtyFocus = (d: PenyelesaianDetail, e: Event) => {
+  (e.target as HTMLInputElement).value = d.qty ? String(d.qty) : "";
+};
+
 // ── Row color — baris yang perlu perhatian ────────────────────────────
 const rowClass = (d: PenyelesaianDetail) => {
   if (!d.verified) return "row-unverified";
@@ -686,9 +714,9 @@ const rowClass = (d: PenyelesaianDetail) => {
                 <th style="width: 120px">Nominal Satuan</th>
                 <th style="width: 110px">Total</th>
                 <th style="min-width: 130px">Account</th>
-                <th style="min-width: 180px">Nama Account</th>
-                <th style="min-width: 150px">Cost Center</th>
-                <th style="min-width: 120px">Detail CC</th>
+                <th style="min-width: 240px">Nama Account</th>
+                <th style="min-width: 200px">Cost Center</th>
+                <th style="min-width: 200px">Detail CC</th>
                 <th style="width: 45px">Ver</th>
                 <th style="min-width: 80px">Kegunaan</th>
                 <th style="width: 70px">Kd.Sup</th>
@@ -752,22 +780,28 @@ const rowClass = (d: PenyelesaianDetail) => {
                 <!-- Qty -->
                 <td>
                   <input
-                    v-model.number="d.qty"
-                    type="number"
+                    :value="formatNum(d.qty)"
+                    type="text"
+                    inputmode="numeric"
                     class="cell-inp tr"
                     style="min-width: 65px"
-                    @input="hitungTotal(d)"
+                    @focus="onQtyFocus(d, $event)"
+                    @input="onQtyInput(d, $event)"
+                    @blur="onQtyBlur(d, $event)"
                   />
                 </td>
 
                 <!-- Nominal Satuan -->
                 <td>
                   <input
-                    v-model.number="d.harga"
-                    type="number"
+                    :value="formatNum(d.harga)"
+                    type="text"
+                    inputmode="numeric"
                     class="cell-inp tr"
                     style="min-width: 65px"
-                    @input="hitungTotal(d)"
+                    @focus="onHargaFocus(d, $event)"
+                    @input="onHargaInput(d, $event)"
+                    @blur="onHargaBlur(d, $event)"
                   />
                 </td>
 
@@ -799,7 +833,12 @@ const rowClass = (d: PenyelesaianDetail) => {
 
                 <!-- Nama Account -->
                 <td>
-                  <span class="cell-text">{{ d.reknama || "-" }}</span>
+                  <span
+                    class="cell-text"
+                    style="min-width: 200px; display: block"
+                  >
+                    {{ d.reknama || "-" }}
+                  </span>
                 </td>
 
                 <!-- Cost Center -->
@@ -808,7 +847,7 @@ const rowClass = (d: PenyelesaianDetail) => {
                     <span
                       class="cell-text"
                       style="
-                        max-width: 100px;
+                        max-width: 155px;
                         overflow: hidden;
                         text-overflow: ellipsis;
                       "
@@ -831,7 +870,7 @@ const rowClass = (d: PenyelesaianDetail) => {
                     <span
                       class="cell-text"
                       style="
-                        max-width: 60px;
+                        max-width: 155px;
                         overflow: hidden;
                         text-overflow: ellipsis;
                       "

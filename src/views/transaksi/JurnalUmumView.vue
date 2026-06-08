@@ -171,6 +171,12 @@ const rowPropsFn = (data: any) => {
 };
 
 const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
+
+const fmtDate = (v: string) => {
+  if (!v) return "-";
+  const [y, m, d] = v.split("-");
+  return `${d}-${m}-${y}`;
+};
 </script>
 
 <template>
@@ -246,6 +252,10 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
       <span style="font-variant-numeric: tabular-nums">{{
         fmt(Number(value))
       }}</span>
+    </template>
+
+    <template #item.Tanggal="{ value }">
+      <span>{{ fmtDate(value) }}</span>
     </template>
 
     <!-- ── Custom cell: Closed badge ── -->

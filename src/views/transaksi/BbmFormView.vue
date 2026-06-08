@@ -63,6 +63,21 @@ const totalBbm = computed(() =>
 );
 const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
 
+const parseNum = (v: string) =>
+  Number(String(v).replace(/\./g, "").replace(",", ".")) || 0;
+
+const formatNum = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
+
+const onNominalInput = (d: BbmFormDetail, e: Event) => {
+  d.nominal = parseNum((e.target as HTMLInputElement).value);
+};
+const onNominalBlur = (d: BbmFormDetail, e: Event) => {
+  (e.target as HTMLInputElement).value = formatNum(d.nominal);
+};
+const onNominalFocus = (d: BbmFormDetail, e: Event) => {
+  (e.target as HTMLInputElement).value = d.nominal ? String(d.nominal) : "";
+};
+
 // ── onMounted ─────────────────────────────────────────────────────────
 onMounted(async () => {
   isLoading.value = true;
@@ -414,9 +429,9 @@ const confirmClose = () => {
                 <th style="min-width: 220px">Uraian</th>
                 <th style="width: 130px">Nominal</th>
                 <th style="min-width: 110px">Account</th>
-                <th style="min-width: 160px">Nama Account</th>
-                <th style="min-width: 120px">Cost Center</th>
-                <th style="min-width: 120px">Detail CC</th>
+                <th style="min-width: 220px">Nama Account</th>
+                <th style="min-width: 200px">Cost Center</th>
+                <th style="min-width: 200px">Detail CC</th>
                 <th style="width: 28px"></th>
               </tr>
             </thead>
@@ -434,10 +449,14 @@ const confirmClose = () => {
 
                 <td>
                   <input
-                    v-model.number="d.nominal"
-                    type="number"
+                    :value="formatNum(d.nominal)"
+                    type="text"
+                    inputmode="numeric"
                     class="cell-inp tr"
                     style="min-width: 100px"
+                    @focus="onNominalFocus(d, $event)"
+                    @input="onNominalInput(d, $event)"
+                    @blur="onNominalBlur(d, $event)"
                   />
                 </td>
 
@@ -464,7 +483,16 @@ const confirmClose = () => {
                 </td>
 
                 <td>
-                  <span class="cell-text">{{ d.reknama || "-" }}</span>
+                  <span
+                    class="cell-text"
+                    style="
+                      min-width: 180px;
+                      display: block;
+                      white-space: nowrap;
+                    "
+                  >
+                    {{ d.reknama || "-" }}
+                  </span>
                 </td>
 
                 <td>
@@ -472,9 +500,10 @@ const confirmClose = () => {
                     <span
                       class="cell-text"
                       style="
-                        max-width: 80px;
+                        max-width: 155px;
                         overflow: hidden;
                         text-overflow: ellipsis;
+                        white-space: nowrap;
                       "
                     >
                       {{ d.ccnama || "-" }}
@@ -494,9 +523,10 @@ const confirmClose = () => {
                     <span
                       class="cell-text"
                       style="
-                        max-width: 80px;
+                        max-width: 155px;
                         overflow: hidden;
                         text-overflow: ellipsis;
+                        white-space: nowrap;
                       "
                     >
                       {{ d.dcnama || "-" }}

@@ -100,6 +100,17 @@ const fmtSelisih = (v: number) => {
   return (v < 0 ? "-" : "") + new Intl.NumberFormat("id-ID").format(abs);
 };
 
+const fmtDate = (v: string) => {
+  if (!v) return "-";
+  const [y, m, d] = v.split("-");
+  return `${d}-${m}-${y}`;
+};
+
+const parseNum = (v: string) =>
+  Number(String(v).replace(/\./g, "").replace(",", ".")) || 0;
+
+const formatNum = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
+
 // ── Row props ─────────────────────────────────────────────────────────
 const rowPropsFn = (data: any) => {
   const row = data.item?.raw || data.item;
@@ -464,7 +475,7 @@ const doExport = () => exportRekonsiliasiBank(items.value, tanggal.value);
           <!-- Info rekening -->
           <div class="vld-info-row">
             <span class="vld-lbl">Tanggal</span>
-            <span class="vld-val">{{ validasiTanggal }}</span>
+            <span class="vld-val">{{ fmtDate(validasiTanggal) }}</span>
           </div>
           <div class="vld-info-row">
             <span class="vld-lbl">Kode</span>
@@ -484,11 +495,30 @@ const doExport = () => exportRekonsiliasiBank(items.value, tanggal.value);
             <div class="vld-saldo-row mt-2">
               <label class="vld-saldo-lbl req">Rekening Koran</label>
               <input
-                v-model.number="saldoKoran"
-                type="number"
+                :value="formatNum(saldoKoran)"
+                type="text"
+                inputmode="numeric"
                 class="vld-saldo-input"
                 placeholder="0"
-                @focus="($event.target as HTMLInputElement).select()"
+                @focus="
+                  (e) => {
+                    (e.target as HTMLInputElement).value = saldoKoran
+                      ? String(saldoKoran)
+                      : '';
+                    (e.target as HTMLInputElement).select();
+                  }
+                "
+                @input="
+                  (e) => {
+                    saldoKoran = parseNum((e.target as HTMLInputElement).value);
+                  }
+                "
+                @blur="
+                  (e) => {
+                    (e.target as HTMLInputElement).value =
+                      formatNum(saldoKoran);
+                  }
+                "
               />
             </div>
             <!-- Selisih indicator -->
@@ -535,7 +565,7 @@ const doExport = () => exportRekonsiliasiBank(items.value, tanggal.value);
           </div>
         </div>
         <div class="rekon-header-right">
-          <span class="rekon-header-tgl">{{ rekonTanggal }}</span>
+          <span class="rekon-header-tgl">{{ fmtDate(rekonTanggal) }}</span>
         </div>
       </div>
 
@@ -571,9 +601,31 @@ const doExport = () => exportRekonsiliasiBank(items.value, tanggal.value);
                     <td><input v-model="r.keterangan" class="ri" /></td>
                     <td>
                       <input
-                        v-model.number="r.nominal"
-                        type="number"
+                        :value="formatNum(r.nominal)"
+                        type="text"
+                        inputmode="numeric"
                         class="ri tr"
+                        @focus="
+                          (e) => {
+                            (e.target as HTMLInputElement).value = r.nominal
+                              ? String(r.nominal)
+                              : '';
+                          }
+                        "
+                        @input="
+                          (e) => {
+                            r.nominal = parseNum(
+                              (e.target as HTMLInputElement).value,
+                            );
+                          }
+                        "
+                        @blur="
+                          (e) => {
+                            (e.target as HTMLInputElement).value = formatNum(
+                              r.nominal,
+                            );
+                          }
+                        "
                       />
                     </td>
                     <td>
@@ -619,9 +671,31 @@ const doExport = () => exportRekonsiliasiBank(items.value, tanggal.value);
                     <td><input v-model="r.keterangan" class="ri" /></td>
                     <td>
                       <input
-                        v-model.number="r.nominal"
-                        type="number"
+                        :value="formatNum(r.nominal)"
+                        type="text"
+                        inputmode="numeric"
                         class="ri tr"
+                        @focus="
+                          (e) => {
+                            (e.target as HTMLInputElement).value = r.nominal
+                              ? String(r.nominal)
+                              : '';
+                          }
+                        "
+                        @input="
+                          (e) => {
+                            r.nominal = parseNum(
+                              (e.target as HTMLInputElement).value,
+                            );
+                          }
+                        "
+                        @blur="
+                          (e) => {
+                            (e.target as HTMLInputElement).value = formatNum(
+                              r.nominal,
+                            );
+                          }
+                        "
                       />
                     </td>
                     <td>
@@ -686,9 +760,31 @@ const doExport = () => exportRekonsiliasiBank(items.value, tanggal.value);
                     <td><input v-model="r.keterangan" class="ri" /></td>
                     <td>
                       <input
-                        v-model.number="r.nominal"
-                        type="number"
+                        :value="formatNum(r.nominal)"
+                        type="text"
+                        inputmode="numeric"
                         class="ri tr"
+                        @focus="
+                          (e) => {
+                            (e.target as HTMLInputElement).value = r.nominal
+                              ? String(r.nominal)
+                              : '';
+                          }
+                        "
+                        @input="
+                          (e) => {
+                            r.nominal = parseNum(
+                              (e.target as HTMLInputElement).value,
+                            );
+                          }
+                        "
+                        @blur="
+                          (e) => {
+                            (e.target as HTMLInputElement).value = formatNum(
+                              r.nominal,
+                            );
+                          }
+                        "
                       />
                     </td>
                     <td>
@@ -734,9 +830,31 @@ const doExport = () => exportRekonsiliasiBank(items.value, tanggal.value);
                     <td><input v-model="r.keterangan" class="ri" /></td>
                     <td>
                       <input
-                        v-model.number="r.nominal"
-                        type="number"
+                        :value="formatNum(r.nominal)"
+                        type="text"
+                        inputmode="numeric"
                         class="ri tr"
+                        @focus="
+                          (e) => {
+                            (e.target as HTMLInputElement).value = r.nominal
+                              ? String(r.nominal)
+                              : '';
+                          }
+                        "
+                        @input="
+                          (e) => {
+                            r.nominal = parseNum(
+                              (e.target as HTMLInputElement).value,
+                            );
+                          }
+                        "
+                        @blur="
+                          (e) => {
+                            (e.target as HTMLInputElement).value = formatNum(
+                              r.nominal,
+                            );
+                          }
+                        "
                       />
                     </td>
                     <td>
