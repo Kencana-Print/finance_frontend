@@ -450,6 +450,78 @@ const router = createRouter({
         browseRoute: "TerimaSetoranBrowse",
       },
     },
+    {
+      path: "/transaksi/voucher-pembayaran",
+      name: "VoucherPembayaran",
+      component: () => import("@/views/transaksi/VoucherPembayaranView.vue"),
+      meta: {
+        layout: "DefaultLayout",
+        requiresAuth: true,
+        menuId: "30",
+        title: "Voucher Pembayaran",
+      },
+    },
+    {
+      path: "/transaksi/voucher-pembayaran/create",
+      name: "VoucherPembayaranCreate",
+      component: () =>
+        import("@/views/transaksi/VoucherPembayaranFormView.vue"),
+      meta: {
+        layout: "DefaultLayout",
+        requiresAuth: true,
+        menuId: "30",
+        title: "Buat Voucher",
+      },
+    },
+    {
+      path: "/transaksi/voucher-pembayaran/edit/:nomor",
+      name: "VoucherPembayaranEdit",
+      component: () =>
+        import("@/views/transaksi/VoucherPembayaranFormView.vue"),
+      meta: {
+        layout: "DefaultLayout",
+        requiresAuth: true,
+        menuId: "30",
+        title: "Ubah Voucher",
+      },
+    },
+    {
+      path: "/transaksi/voucher-pembayaran/print/:nomor",
+      name: "VoucherPembayaranPrint",
+      component: () =>
+        import("@/views/transaksi/VoucherPembayaranPrintView.vue"),
+      meta: {
+        layout: "BlankLayout",
+        requiresAuth: true,
+        title: "Cetak Voucher",
+      },
+    },
+    {
+      path: "/transaksi/voucher-pembayaran/realisasi/create",
+      name: "RealisasiVoucherCreate",
+      component: () =>
+        import("@/views/transaksi/VoucherPembayaranFormView.vue"),
+      meta: {
+        layout: "DefaultLayout",
+        requiresAuth: true,
+        menuId: "30",
+        title: "Realisasi Voucher",
+        isRealisasi: true,
+      },
+    },
+    {
+      path: "/transaksi/voucher-pembayaran/realisasi/edit/:nomor",
+      name: "RealisasiVoucherEdit",
+      component: () =>
+        import("@/views/transaksi/VoucherPembayaranFormView.vue"),
+      meta: {
+        layout: "DefaultLayout",
+        requiresAuth: true,
+        menuId: "30",
+        title: "Edit Realisasi Voucher",
+        isRealisasi: true,
+      },
+    },
 
     // ── Posting ──
     {

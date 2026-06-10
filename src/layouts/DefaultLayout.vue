@@ -225,6 +225,12 @@ const menus = [
         route: "/transaksi/terima-setoran",
         menuId: "29",
       },
+      {
+        title: "Voucher Pembayaran",
+        icon: IconFileInvoice,
+        route: "/transaksi/voucher-pembayaran",
+        menuId: "30",
+      },
     ],
   },
   {
