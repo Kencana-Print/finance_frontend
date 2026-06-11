@@ -17,7 +17,6 @@ import {
   IconFileInvoice,
   IconPrinter,
   IconFileSpreadsheet,
-  IconCheck,
 } from "@tabler/icons-vue";
 
 const router = useRouter();
@@ -93,28 +92,17 @@ const headers = [
   { key: "Net", title: "Net", width: "140px", align: "right" as const },
   { key: "Disc", title: "Disc", width: "60px", align: "right" as const },
   { key: "Status", title: "Status", width: "80px", align: "center" as const },
-  { key: "NomorRealisasi", title: "No. Realisasi", width: "160px" },
-  { key: "KodeBayar", title: "Kode Bayar", width: "90px" },
-  { key: "NamaBayar", title: "Nama Bayar", width: "100px" }, // ← NEW
+  { key: "NomorRealisasi", title: "No. Pengajuan Transfer", width: "160px" },
   {
-    key: "TanggalBayar",
-    title: "Tgl Bayar",
+    key: "TanggalRealisasi",
+    title: "Tgl Realisasi",
     width: "100px",
     align: "center" as const,
-  }, // ← NEW
-  {
-    key: "TanggalTempo",
-    title: "Tgl Tempo",
-    width: "100px",
-    align: "center" as const,
-  }, // ← NEW
-  { key: "AccountBayar", title: "Account", width: "100px" }, // ← NEW
-  {
-    key: "UserPelunasan",
-    title: "User Pelunasan",
-    width: "110px",
-    align: "center" as const,
-  }, // ← NEW
+  },
+  { key: "AccountBayar", title: "Account", width: "100px" },
+  { key: "NamaAccount", title: "Nama Account", width: "160px" },
+  { key: "CcNama", title: "Cost Center", width: "140px" },
+  { key: "DcNama", title: "DC", width: "120px" },
   { key: "Usr", title: "User", width: "80px", align: "center" as const },
   { key: "Created", title: "Created", width: "160px" },
 ];
@@ -156,6 +144,9 @@ const rowPropsFn = (data: any) => {
     return { style: "background:#e8f5e9;color:#2e7d32;font-weight:600" };
   if (ngedit === "TOLAK")
     return { style: "background:#ffebee;color:#c62828;font-weight:600" };
+  // Belum ada nomor realisasi (belum diinput ke pengajuan transfer)
+  if (!row?.NomorRealisasi)
+    return { style: "background:#fff3e0;color:#e65100" };
   return {};
 };
 
@@ -193,14 +184,6 @@ const onCetak = () => {
     `/transaksi/voucher-pembayaran/print/${encodeURIComponent(selectedItem.value!.Nomor)}`,
     "_blank",
   );
-};
-
-const onRealisasi = () => {
-  if (!requireSelected()) return;
-  router.push({
-    name: "RealisasiVoucherCreate",
-    query: { vou: encodeURIComponent(selectedItem.value!.Nomor) },
-  });
 };
 
 // ── Hapus ─────────────────────────────────────────────────────────────
@@ -339,6 +322,8 @@ const totalNet = computed(() =>
         <span class="legend-lbl">Sudah Acc</span>
         <span class="legend-dot" style="background: #c62828"></span>
         <span class="legend-lbl">Tolak</span>
+        <span class="legend-dot" style="background: #e65100"></span>
+        <span class="legend-lbl">Belum PT</span>
       </div>
     </template>
 
@@ -395,16 +380,6 @@ const totalNet = computed(() =>
         /></template>
         Export Detail
       </v-btn>
-      <v-btn
-        size="small"
-        color="indigo-darken-1"
-        variant="flat"
-        :disabled="!selectedItem"
-        @click="onRealisasi"
-      >
-        <template #prepend><IconCheck :size="13" :stroke-width="2" /></template>
-        Realisasi
-      </v-btn>
     </template>
 
     <!-- ── Custom cells ── -->
@@ -421,10 +396,7 @@ const totalNet = computed(() =>
     >
       <span class="num-cell">{{ value ? fmt(value) : "" }}</span>
     </template>
-    <template #item.TanggalBayar="{ value }">
-      <span>{{ fmtDate(value) }}</span>
-    </template>
-    <template #item.TanggalTempo="{ value }">
+    <template #item.TanggalRealisasi="{ value }">
       <span>{{ fmtDate(value) }}</span>
     </template>
 

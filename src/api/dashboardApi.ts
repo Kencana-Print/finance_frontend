@@ -9,6 +9,7 @@ export interface DashboardSummary {
   saldoKas: { account: string; saldo: number };
   rekon: { selisihCount: number };
   stok: { negativeCount: number };
+  voucherPt: { count: number; total: number };
 }
 
 export const dashboardApi = {

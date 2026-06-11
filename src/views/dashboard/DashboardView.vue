@@ -40,6 +40,7 @@ const canViewSetoran = computed(() => authStore.can("29", "view"));
 const canViewKasbon = computed(() => authStore.can("21", "view"));
 const canViewBkk = computed(() => authStore.can("22", "view"));
 const canViewJurnal = computed(() => authStore.can("26", "view"));
+const canViewVoucher = computed(() => authStore.can("30", "view"));
 
 const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v);
 const fmtCompact = (v: number) => {
@@ -61,6 +62,7 @@ const summaryData = ref<DashboardSummary>({
   saldoKas: { account: "", saldo: 0 },
   rekon: { selisihCount: 0 },
   stok: { negativeCount: 0 },
+  voucherPt: { count: 0, total: 0 },
 });
 const isSummaryLoading = ref(true);
 
@@ -345,6 +347,36 @@ const chartBars = computed(() => {
                 ? "Perlu perhatian"
                 : "Semua normal"
             }}
+          </div>
+        </div>
+
+        <!-- Voucher Belum PT -->
+        <div
+          v-if="canViewVoucher"
+          class="task-card"
+          :class="
+            summaryData.voucherPt?.count > 0 ? 'task-orange' : 'task-green'
+          "
+          @click="router.push('/transaksi/voucher-pembayaran')"
+        >
+          <div class="task-top">
+            <div
+              class="task-icon-wrap"
+              :class="summaryData.voucherPt?.count > 0 ? 'orange' : 'green'"
+            >
+              <IconReceipt2 :size="20" />
+            </div>
+            <IconChevronRight :size="14" class="task-arrow" />
+          </div>
+          <div class="task-count">
+            <span v-if="isSummaryLoading">—</span>
+            <span v-else>{{ summaryData.voucherPt?.count ?? 0 }}</span>
+          </div>
+          <div class="task-label">Voucher Belum PT</div>
+          <div class="task-sub">
+            <span v-if="!isSummaryLoading">
+              Rp {{ fmtCompact(summaryData.voucherPt?.total ?? 0) }}
+            </span>
           </div>
         </div>
       </div>

@@ -793,3 +793,132 @@ const doExportPivot = async () => {
   font-variant-numeric: tabular-nums;
 }
 </style>
+
+<style>
+/* ── Pivot Filter Dialog ── */
+.pvtFilterBox {
+  background: white !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+  padding: 0 !important;
+  min-width: 220px !important;
+  overflow: hidden !important;
+  font-family: inherit !important;
+}
+
+/* Header "Filter values" */
+.pvtFilterBox h4 {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: white !important;
+  background: #2e7d32 !important;
+  margin: 0 !important;
+  padding: 8px 12px !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+}
+
+/* Select All / None links */
+.pvtFilterBox p {
+  display: flex !important;
+  gap: 6px !important;
+  padding: 6px 12px !important;
+  margin: 0 !important;
+  border-bottom: 1px solid #f0f0f0 !important;
+  background: #f9fafb !important;
+}
+.pvtFilterBox p a {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: #2e7d32 !important;
+  text-decoration: none !important;
+  padding: 2px 8px !important;
+  border: 1px solid #c8e6c9 !important;
+  border-radius: 4px !important;
+  background: white !important;
+  cursor: pointer !important;
+  transition: all 0.15s !important;
+}
+.pvtFilterBox p a:hover {
+  background: #2e7d32 !important;
+  color: white !important;
+}
+
+/* Scrollable checkbox list */
+.pvtFilterBox .pvtCheckContainer {
+  max-height: 240px !important;
+  overflow-y: auto !important;
+  padding: 6px 4px !important;
+  scrollbar-width: thin !important;
+}
+.pvtFilterBox .pvtCheckContainer p {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 4px 10px !important;
+  margin: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  transition: background 0.1s !important;
+}
+.pvtFilterBox .pvtCheckContainer p:hover {
+  background: rgba(46, 125, 50, 0.06) !important;
+}
+.pvtFilterBox .pvtCheckContainer p label {
+  font-size: 11px !important;
+  color: #374151 !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  width: 100% !important;
+}
+.pvtFilterBox .pvtCheckContainer input[type="checkbox"] {
+  accent-color: #2e7d32 !important;
+  width: 13px !important;
+  height: 13px !important;
+  flex-shrink: 0 !important;
+  cursor: pointer !important;
+}
+
+/* Footer buttons Apply / Cancel */
+.pvtFilterBox .pvtButton {
+  display: flex !important;
+  gap: 6px !important;
+  justify-content: flex-end !important;
+  padding: 8px 12px !important;
+  border-top: 1px solid #f0f0f0 !important;
+  background: #f9fafb !important;
+}
+.pvtFilterBox button {
+  height: 28px !important;
+  padding: 0 14px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  border-radius: 5px !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.15s !important;
+}
+/* Apply button */
+.pvtFilterBox button:first-of-type {
+  background: #2e7d32 !important;
+  color: white !important;
+}
+.pvtFilterBox button:first-of-type:hover {
+  background: #1b5e20 !important;
+}
+/* Cancel button */
+.pvtFilterBox button:last-of-type {
+  background: white !important;
+  color: #374151 !important;
+  border: 1px solid #d1d5db !important;
+}
+.pvtFilterBox button:last-of-type:hover {
+  background: #f3f4f6 !important;
+}
+</style>

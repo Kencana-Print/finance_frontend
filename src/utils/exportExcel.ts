@@ -3971,34 +3971,34 @@ export const exportVoucherPembayaran = async (
     cell.alignment = { vertical: "middle", horizontal: "right" };
   };
 
-  ws.mergeCells("A1:S1");
+  // Total kolom sekarang 18 (A–R)
+  ws.mergeCells("A1:R1");
   ws.getCell("A1").value = "Voucher Pembayaran";
   ws.getCell("A1").font = { bold: true, size: 12 };
-  ws.mergeCells("A2:S2");
+  ws.mergeCells("A2:R2");
   ws.getCell("A2").value = `Periode: ${startDate} s/d ${endDate}`;
   ws.getCell("A2").font = { size: 10 };
   ws.addRow([]);
 
   const cols = [
-    "Nomor",
-    "Tanggal",
-    "Kode Supplier",
-    "Supplier",
-    "No Pajak",
-    "Total",
-    "Bahan Tambahan",
-    "Net",
-    "Disc",
-    "Status",
-    "No Realisasi",
-    "Kode Bayar",
-    "Nama Bayar", // ← NEW col 13
-    "Tgl Bayar", // ← NEW col 14
-    "Tgl Tempo", // ← NEW col 15
-    "Account", // ← NEW col 16
-    "User Pelunasan", // ← NEW col 17
-    "User",
-    "Created",
+    "Nomor", // 1
+    "Tanggal", // 2
+    "Kode Supplier", // 3
+    "Supplier", // 4
+    "No Pajak", // 5
+    "Total", // 6
+    "Bahan Tambahan", // 7
+    "Net", // 8
+    "Disc", // 9
+    "Status", // 10
+    "No Realisasi", // 11
+    "Tgl Realisasi", // 12
+    "Account", // 13
+    "Nama Account", // 14
+    "Cost Center", // 15
+    "DC", // 16
+    "User", // 17
+    "Created", // 18
   ];
   const hRow = ws.addRow(cols);
   hRow.eachCell((cell, i) => setH(cell, cols[i - 1]));
@@ -4020,14 +4020,13 @@ export const exportVoucherPembayaran = async (
     setN(row.getCell(9), r.Disc);
     setC(row.getCell(10), r.Status, "center");
     setC(row.getCell(11), r.NomorRealisasi);
-    setC(row.getCell(12), r.KodeBayar);
-    setC(row.getCell(13), r.NamaBayar);
-    setC(row.getCell(14), r.TanggalBayar, "center");
-    setC(row.getCell(15), r.TanggalTempo, "center");
-    setC(row.getCell(16), r.AccountBayar);
-    setC(row.getCell(17), r.UserPelunasan, "center");
-    setC(row.getCell(18), r.Usr, "center"); // was 13
-    setC(row.getCell(19), r.Created); // was 14
+    setC(row.getCell(12), r.TanggalRealisasi ?? "", "center");
+    setC(row.getCell(13), r.AccountBayar);
+    setC(row.getCell(14), r.NamaAccount);
+    setC(row.getCell(15), r.CcNama);
+    setC(row.getCell(16), r.DcNama);
+    setC(row.getCell(17), r.Usr, "center");
+    setC(row.getCell(18), r.Created);
     totTotal += Number(r.Total);
     totBahan += Number(r.BahanTambahan);
     totNet += Number(r.Net);
@@ -4035,7 +4034,7 @@ export const exportVoucherPembayaran = async (
   }
 
   const footRow = ws.addRow([]);
-  for (let c = 1; c <= 14; c++) {
+  for (let c = 1; c <= 18; c++) {
     footRow.getCell(c).border = borderAll;
     footRow.getCell(c).fill = totalFill;
   }
@@ -4045,25 +4044,24 @@ export const exportVoucherPembayaran = async (
   setN(footRow.getCell(8), totNet, true);
   footRow.height = 18;
 
-  ws.getColumn(1).width = 18;
-  ws.getColumn(2).width = 12;
-  ws.getColumn(3).width = 10;
-  ws.getColumn(4).width = 32;
-  ws.getColumn(5).width = 14;
-  ws.getColumn(6).width = 16;
-  ws.getColumn(7).width = 16;
-  ws.getColumn(8).width = 16;
-  ws.getColumn(9).width = 10;
-  ws.getColumn(10).width = 10;
-  ws.getColumn(11).width = 18;
-  ws.getColumn(12).width = 12;
-  ws.getColumn(13).width = 14; // NamaBayar
-  ws.getColumn(14).width = 12; // TglBayar
-  ws.getColumn(15).width = 12; // TglTempo
-  ws.getColumn(16).width = 14; // Account
-  ws.getColumn(17).width = 14; // UserPelunasan
-  ws.getColumn(18).width = 10; // User
-  ws.getColumn(19).width = 20; // Created
+  ws.getColumn(1).width = 18; // Nomor
+  ws.getColumn(2).width = 12; // Tanggal
+  ws.getColumn(3).width = 10; // Kode Supplier
+  ws.getColumn(4).width = 32; // Supplier
+  ws.getColumn(5).width = 14; // No Pajak
+  ws.getColumn(6).width = 16; // Total
+  ws.getColumn(7).width = 16; // Bahan Tambahan
+  ws.getColumn(8).width = 16; // Net
+  ws.getColumn(9).width = 10; // Disc
+  ws.getColumn(10).width = 10; // Status
+  ws.getColumn(11).width = 18; // No Realisasi
+  ws.getColumn(12).width = 12; // Tgl Realisasi
+  ws.getColumn(13).width = 14; // Account
+  ws.getColumn(14).width = 22; // Nama Account
+  ws.getColumn(15).width = 18; // Cost Center
+  ws.getColumn(16).width = 18; // DC
+  ws.getColumn(17).width = 10; // User
+  ws.getColumn(18).width = 20; // Created
 
   const buf = await wb.xlsx.writeBuffer();
   saveAs(new Blob([buf]), `VoucherPembayaran_${startDate}_sd_${endDate}.xlsx`);

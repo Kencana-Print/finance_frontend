@@ -12,12 +12,11 @@ export interface VoucherRow {
   Disc: number;
   Status: string;
   NomorRealisasi: string;
-  KodeBayar: string;
-  NamaBayar: string;
-  TanggalBayar: string;
-  TanggalTempo: string;
+  TanggalRealisasi: string | null;
   AccountBayar: string;
-  UserPelunasan: string;
+  NamaAccount: string;
+  CcNama: string;
+  DcNama: string;
   Ngedit: string;
   Usr: string;
   Created: string;

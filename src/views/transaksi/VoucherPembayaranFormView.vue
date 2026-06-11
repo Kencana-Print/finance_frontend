@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, useTemplateRef } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useToast } from "vue-toastification";
 import { isAuthExpiredError } from "@/api/axios";
@@ -33,7 +33,6 @@ const showCloseDialog = ref(false);
 const showPrintDialog = ref(false);
 const savedNomor = ref("");
 const showHintPopup = ref(false);
-const hintBtnEl = ref<HTMLElement | null>(null);
 const hintPopupStyle = ref({});
 const originalSupRekening = ref("");
 const originalSupBank = ref("");
@@ -51,7 +50,6 @@ const onHintEnter = (e: MouseEvent) => {
   };
   showHintPopup.value = true;
 };
-
 const onHintLeave = () => {
   showHintPopup.value = false;
 };
@@ -82,7 +80,6 @@ const bahanTambahan = ref<VoucherFormBahan[]>([]);
 const originalState = ref<any>(null);
 
 // ── Pin5 badge ────────────────────────────────────────────────────────
-// Delphi: imgtglminta/wait/acc/tolak
 const pin5Config = computed(() => {
   const map: Record<string, { label: string; color: string }> = {
     MINTA: { label: "Perlu Pengajuan", color: "#f57c00" },
@@ -93,10 +90,7 @@ const pin5Config = computed(() => {
   return map[form.value.pin5Status] ?? null;
 });
 
-// ── hitung — Delphi hitung() ─────────────────────────────────────────
-// BPB/BPJ/POE → += total, RET/PJG → -= total
-// Total = xtotal - xpotonganBahan
-// GrandTotal = Total - Disc
+// ── Hitung ────────────────────────────────────────────────────────────
 const xpotonganBahan = computed(() =>
   bahanTambahan.value.reduce((s, b) => s + (Number(b.nilai) || 0), 0),
 );
@@ -124,7 +118,7 @@ const formatNum = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
 const addDetailRow = () =>
   detail.value.push({
     tipe: "",
-    searchType: "BPB", // default BPB Bahan
+    searchType: "BPB",
     nomor: "",
     tanggal: "",
     keterangan: "",
@@ -140,7 +134,6 @@ const addDetailRow = () =>
 const removeDetailRow = (idx: number) => detail.value.splice(idx, 1);
 
 const recalcDetail = (d: VoucherFormDetail) => {
-  // Delphi Col8 Enter: potongan = bs * tarif; total = nilai - potongan
   d.potongan = Number(d.bs) * Number(d.tarif);
   d.total = Number(d.nilai) - d.potongan;
 };
@@ -149,7 +142,6 @@ const onNilaiInput = (d: VoucherFormDetail, e: Event) => {
   d.nilai = parseNum((e.target as HTMLInputElement).value);
 };
 const onNilaiBlur = (d: VoucherFormDetail, e: Event) => {
-  // Delphi GridDetailCellValidate: nilai <= nilaiMax
   if (d.nilaiMax > 0 && d.nilai > d.nilaiMax) {
     toast.warning("Nilai melebihi yang seharusnya.");
     d.nilai = d.nilaiMax;
@@ -157,7 +149,6 @@ const onNilaiBlur = (d: VoucherFormDetail, e: Event) => {
   recalcDetail(d);
   (e.target as HTMLInputElement).value = formatNum(d.nilai);
 };
-
 const onBsInput = (d: VoucherFormDetail, e: Event) => {
   d.bs = parseNum((e.target as HTMLInputElement).value);
 };
@@ -174,8 +165,6 @@ const onTarifBlur = (d: VoucherFormDetail, e: Event) => {
 };
 
 // ── Load nota detail ──────────────────────────────────────────────────
-// Delphi loaddatadetail: load by nota nomor (prefix determines type)
-// Only load if nilaiMax=0 (not yet loaded) — Delphi: if Floats[6,Row]=0
 const loadNotaDetail = async (idx: number, nomor: string, searchType = "") => {
   if (!nomor.trim()) return;
   const d = detail.value[idx];
@@ -208,7 +197,6 @@ const loadNotaDetail = async (idx: number, nomor: string, searchType = "") => {
 const onDetailNomorEnter = async (idx: number) => {
   const d = detail.value[idx];
   if (!d.nomor) return;
-  // Reset nilaiMax agar selalu reload saat user ganti nomor manual
   d.nilaiMax = 0;
   await loadNotaDetail(idx, d.nomor, d.searchType);
 };
@@ -224,7 +212,6 @@ const addBahanRow = () =>
   });
 const removeBahanRow = (idx: number) => bahanTambahan.value.splice(idx, 1);
 
-// Delphi AdvColumnGrid1: Floats[5] = Floats[4]*Floats[3] (Nilai = Harga*Jumlah)
 const onBahanJumlahInput = (b: VoucherFormBahan, e: Event) => {
   b.jumlah = parseNum((e.target as HTMLInputElement).value);
 };
@@ -256,7 +243,6 @@ const openSupplierModal = async () => {
     supplierLoading.value = false;
   }
 };
-
 const searchSupplierDebounced = async (q: string) => {
   supplierLoading.value = true;
   try {
@@ -267,7 +253,6 @@ const searchSupplierDebounced = async (q: string) => {
     supplierLoading.value = false;
   }
 };
-
 const applySupplier = async (kode: string) => {
   try {
     const s = await voucherPembayaranFormApi.getSupplier(kode);
@@ -279,7 +264,6 @@ const applySupplier = async (kode: string) => {
       supCabang: s.cabang,
       supAtasnama: s.atasnama,
     });
-    // Simpan nilai dari DB — jika kosong, field bisa diedit
     originalSupRekening.value = s.rekening || "";
     originalSupBank.value = s.bank || "";
     originalSupCabang.value = s.cabang || "";
@@ -290,19 +274,16 @@ const applySupplier = async (kode: string) => {
     form.value.supNama = "";
   }
 };
-
 const selectSupplier = async (s: any) => {
   showSupplierModal.value = false;
   await applySupplier(s.kode);
 };
-
 const onSupKodeBlur = async () => {
   if (!form.value.supKode) return;
   await applySupplier(form.value.supKode);
 };
 
 // ── Nota search modal ─────────────────────────────────────────────────
-// Delphi: F1=BPB, F2=RTG, F3=BPJ, F4=POE, F5=PJG
 const showNotaModal = ref(false);
 const notaModalType = ref("BPB");
 const activeNotaIdx = ref(-1);
@@ -347,7 +328,6 @@ const openNotaModal = async (type: string, idx: number) => {
     notaLoading.value = false;
   }
 };
-
 const doSearchNota = async () => {
   notaLoading.value = true;
   try {
@@ -362,7 +342,6 @@ const doSearchNota = async () => {
     notaLoading.value = false;
   }
 };
-
 const selectNota = async (item: any) => {
   const exists = detail.value.some(
     (d, i) => i !== activeNotaIdx.value && d.nomor === item.Nomor,
@@ -371,31 +350,23 @@ const selectNota = async (item: any) => {
     toast.warning("Nota ini sudah diinputkan.");
     return;
   }
-
-  // Reset dulu agar loadNotaDetail tidak skip
   const d = detail.value[activeNotaIdx.value];
   d.nomor = item.Nomor;
-  d.nilaiMax = 0; // ← reset guard
-
+  d.nilaiMax = 0;
   showNotaModal.value = false;
   await loadNotaDetail(activeNotaIdx.value, item.Nomor, notaModalType.value);
-
-  // Apply supplier dari BPG jika header masih kosong
   if (notaModalType.value === "BPG" && item.SupKode && !form.value.supKode) {
     await applySupplier(item.SupKode);
   }
 };
 
-// ── PPN ───────────────────────────────────────────────────────────────
-// Delphi cbbPPNClick: unchecked → ppn=0, nomorPajak disabled+clear
+// ── PPN & Disc ────────────────────────────────────────────────────────
 const onPpnChange = (val: boolean) => {
   if (!val) {
     form.value.ppn = 0;
     form.value.nomorPajak = "";
   }
 };
-
-// ── Disc thousand separator ───────────────────────────────────────────
 const onDiscInput = (e: Event) => {
   form.value.disc = parseNum((e.target as HTMLInputElement).value);
 };
@@ -407,34 +378,7 @@ const onDiscBlur = (e: Event) => {
 onMounted(async () => {
   isLoading.value = true;
   try {
-    if (isRealisasi.value) {
-      // ── REALISASI MODE ──
-      if (isEdit.value) {
-        const d = await voucherPembayaranFormApi.getDetailFormRealisasi(
-          decodeURIComponent(route.params.nomor as string),
-        );
-        Object.assign(rlForm.value, {
-          nomor: d.nomor,
-          kodeBayar: d.kodeBayar,
-          namaBayar: d.namaBayar,
-          tanggal: d.tanggal,
-          tanggalTempo: d.tanggalTempo,
-          account: d.account,
-          namaAccount: d.namaAccount,
-        });
-        rlDetail.value = d.detail;
-        rlOriginalState.value = JSON.parse(
-          JSON.stringify({ form: rlForm.value, detail: rlDetail.value }),
-        );
-      } else {
-        addRlRow();
-        const vou = route.query.vou as string;
-        if (vou) {
-          rlDetail.value[0].vouNomor = decodeURIComponent(vou);
-          await loadRlRow(0, rlDetail.value[0].vouNomor);
-        }
-      }
-    } else if (isEdit.value) {
+    if (isEdit.value) {
       const d = await voucherPembayaranFormApi.getDetailForm(
         decodeURIComponent(route.params.nomor as string),
       );
@@ -455,7 +399,6 @@ onMounted(async () => {
         pin5Status: d.pin5Status,
         pin5Urut: d.pin5Urut,
       });
-      detail.value = d.detail.length ? d.detail : [];
       const typeMap: Record<string, string> = {
         BPB: "BPB",
         BPJ: "BPJ",
@@ -490,29 +433,8 @@ onMounted(async () => {
   }
 });
 
-// ── Validasi ──────────────────────────────────────────────────────────
-// Delphi F10: cek pin5, cek supplier, cek realisasi (di backend)
+// ── Validasi & Save ───────────────────────────────────────────────────
 const validateSave = () => {
-  if (isRealisasi.value) {
-    if (!rlForm.value.kodeBayar) {
-      toast.warning("Kode bayar belum dipilih.");
-      return;
-    }
-    if (isGiro.value && !rlForm.value.nomor) {
-      toast.warning("Nomor Giro harus diisi.");
-      return;
-    }
-    if (!rlForm.value.account) {
-      toast.warning("Account belum dipilih.");
-      return;
-    }
-    if (!rlDetail.value.filter((d) => d.vouNomor).length) {
-      toast.warning("Detail voucher harus diisi minimal satu baris.");
-      return;
-    }
-    showSaveDialog.value = true;
-    return;
-  }
   if (["MINTA", "WAIT", "TOLAK"].includes(form.value.pin5Status)) {
     const msgs: Record<string, string> = {
       MINTA: "Transaksi sudah diclose. Silahkan minta approve untuk menyimpan.",
@@ -537,22 +459,6 @@ const validateSave = () => {
 const confirmSave = async () => {
   isSaving.value = true;
   try {
-    if (isRealisasi.value) {
-      const res = await voucherPembayaranFormApi.saveRealisasi({
-        isEdit: isEdit.value,
-        nomor: rlForm.value.nomor,
-        kodeBayar: rlForm.value.kodeBayar,
-        account: rlForm.value.account,
-        tanggal: rlForm.value.tanggal,
-        tanggalTempo: rlForm.value.tanggalTempo,
-        detail: rlDetail.value.filter((d) => d.vouNomor),
-      });
-      savedNomor.value = res.data.data.nomor;
-      showSaveDialog.value = false;
-      showPrintDialog.value = true;
-      return;
-    }
-
     const res = await voucherPembayaranFormApi.save({
       isEdit: isEdit.value,
       nomor: form.value.nomor,
@@ -594,29 +500,6 @@ const skipSlip = () => {
 
 const confirmCancel = () => {
   showCancelDialog.value = false;
-  if (isRealisasi.value) {
-    if (isEdit.value && rlOriginalState.value) {
-      Object.assign(
-        rlForm.value,
-        JSON.parse(JSON.stringify(rlOriginalState.value.form)),
-      );
-      rlDetail.value = JSON.parse(JSON.stringify(rlOriginalState.value.detail));
-    } else {
-      Object.assign(rlForm.value, {
-        nomor: "",
-        kodeBayar: "CS",
-        namaBayar: "Cash",
-        tanggal: today,
-        tanggalTempo: today,
-        account: "",
-        namaAccount: "",
-      });
-      rlDetail.value = [];
-      addRlRow();
-    }
-    return;
-  }
-
   if (isEdit.value && originalState.value) {
     Object.assign(
       form.value,
@@ -624,7 +507,6 @@ const confirmCancel = () => {
     );
     detail.value = JSON.parse(JSON.stringify(originalState.value.detail));
     bahanTambahan.value = JSON.parse(JSON.stringify(originalState.value.bahan));
-    // Restore original supplier field locks
     originalSupRekening.value = form.value.supRekening || "";
     originalSupBank.value = form.value.supBank || "";
     originalSupCabang.value = form.value.supCabang || "";
@@ -648,233 +530,22 @@ const confirmCancel = () => {
     bahanTambahan.value = [];
     addDetailRow();
     addBahanRow();
-    // Reset original refs — semua field jadi editable
     originalSupRekening.value = "";
     originalSupBank.value = "";
     originalSupCabang.value = "";
     originalSupAtasnama.value = "";
   }
 };
+
 const confirmClose = () => {
   showCloseDialog.value = false;
   router.push({ name: "VoucherPembayaran" });
-};
-
-// ── Realisasi mode ────────────────────────────────────────────────────
-const isRealisasi = computed(() => !!route.meta.isRealisasi);
-const isGiro = computed(() => rlForm.value.kodeBayar === "BG");
-const fmtDate = (v: string) => (v ? v.split("-").reverse().join("/") : "-");
-
-interface RealisasiRow {
-  vouNomor: string;
-  supplier: string;
-  tanggalVou: string;
-  nilai: number;
-}
-
-const rlForm = ref({
-  nomor: "",
-  kodeBayar: "CS",
-  namaBayar: "Cash",
-  tanggal: today,
-  tanggalTempo: today,
-  account: "",
-  namaAccount: "",
-});
-const rlDetail = ref<RealisasiRow[]>([]);
-const rlOriginalState = ref<any>(null);
-const totalRealisasi = computed(() =>
-  rlDetail.value.reduce((s, d) => s + Number(d.nilai), 0),
-);
-
-const addRlRow = () =>
-  rlDetail.value.push({ vouNomor: "", supplier: "", tanggalVou: "", nilai: 0 });
-const removeRlRow = (idx: number) => rlDetail.value.splice(idx, 1);
-
-// Nilai input per baris realisasi
-const onRlNilaiInput = (d: RealisasiRow, e: Event) => {
-  d.nilai = parseNum((e.target as HTMLInputElement).value);
-};
-const onRlNilaiBlur = (d: RealisasiRow, e: Event) => {
-  (e.target as HTMLInputElement).value = formatNum(d.nilai);
-};
-
-// Load voucher detail ke baris
-const loadRlRow = async (idx: number, vouNomor: string) => {
-  if (!vouNomor.trim()) return;
-  try {
-    const currentNomor = isEdit.value
-      ? decodeURIComponent(route.params.nomor as string)
-      : "";
-    const res = await voucherPembayaranFormApi.loadVoucherRealisasiDetail(
-      vouNomor,
-      currentNomor,
-    );
-    Object.assign(rlDetail.value[idx], res);
-  } catch (e: any) {
-    toast.error(e.response?.data?.message ?? "Voucher tidak ditemukan.");
-    Object.assign(rlDetail.value[idx], {
-      vouNomor: "",
-      supplier: "",
-      tanggalVou: "",
-      nilai: 0,
-    });
-  }
-};
-
-const onRlVouEnter = async (idx: number) => {
-  if (!rlDetail.value[idx].vouNomor) return;
-  await loadRlRow(idx, rlDetail.value[idx].vouNomor);
-};
-
-// ── Kode Bayar modal ──────────────────────────────────────────────────
-const showKodeBayarModal = ref(false);
-const kodeBayarOptions = ref<any[]>([]);
-const kodeBayarLoading = ref(false);
-
-const openKodeBayarModal = async () => {
-  showKodeBayarModal.value = true;
-  kodeBayarLoading.value = true;
-  try {
-    kodeBayarOptions.value = await voucherPembayaranFormApi.searchKodeBayar("");
-  } catch {
-    /* silent */
-  } finally {
-    kodeBayarLoading.value = false;
-  }
-};
-const searchKodeBayarDebounced = async (q: string) => {
-  kodeBayarLoading.value = true;
-  try {
-    kodeBayarOptions.value = await voucherPembayaranFormApi.searchKodeBayar(q);
-  } catch {
-    /* silent */
-  } finally {
-    kodeBayarLoading.value = false;
-  }
-};
-const applyKodeBayar = async (kode: string) => {
-  try {
-    const kb = await voucherPembayaranFormApi.getKodeBayar(kode);
-    rlForm.value.kodeBayar = kb.kode;
-    rlForm.value.namaBayar = kb.nama;
-    if (!isGiro.value) rlForm.value.nomor = "";
-  } catch {
-    toast.error("Kode bayar tidak ditemukan.");
-    rlForm.value.kodeBayar = "CS";
-    rlForm.value.namaBayar = "Cash";
-  }
-};
-const selectKodeBayar = async (item: any) => {
-  showKodeBayarModal.value = false;
-  await applyKodeBayar(item.kode);
-};
-const onKodeBayarBlur = async () => {
-  if (rlForm.value.kodeBayar) await applyKodeBayar(rlForm.value.kodeBayar);
-};
-
-// ── Account modal ─────────────────────────────────────────────────────
-const showAccountModal = ref(false);
-const accountOptions = ref<any[]>([]);
-const accountLoading = ref(false);
-
-const openAccountModal = async () => {
-  showAccountModal.value = true;
-  accountLoading.value = true;
-  try {
-    accountOptions.value = await voucherPembayaranFormApi.searchAccount("");
-  } catch {
-    /* silent */
-  } finally {
-    accountLoading.value = false;
-  }
-};
-const searchAccountDebounced = async (q: string) => {
-  accountLoading.value = true;
-  try {
-    accountOptions.value = await voucherPembayaranFormApi.searchAccount(q);
-  } catch {
-    /* silent */
-  } finally {
-    accountLoading.value = false;
-  }
-};
-const selectAccount = (item: any) => {
-  showAccountModal.value = false;
-  rlForm.value.account = item.rekening;
-  rlForm.value.namaAccount = item.bank;
-};
-const onAccountBlur = async () => {
-  if (!rlForm.value.account) {
-    rlForm.value.namaAccount = "";
-    return;
-  }
-  const acc = await voucherPembayaranFormApi
-    .searchAccount(rlForm.value.account)
-    .catch(() => []);
-  rlForm.value.namaAccount =
-    (acc as any[]).find((a) => a.rekening === rlForm.value.account)?.bank ?? "";
-};
-
-// ── Voucher search modal (realisasi) ──────────────────────────────────
-const showRlVoucherModal = ref(false);
-const rlVoucherOptions = ref<any[]>([]);
-const rlVoucherLoading = ref(false);
-const rlVoucherSearch = ref("");
-const activeRlIdx = ref(-1);
-
-const openRlVoucherModal = async (idx: number) => {
-  activeRlIdx.value = idx;
-  rlVoucherSearch.value = "";
-  rlVoucherOptions.value = [];
-  showRlVoucherModal.value = true;
-  rlVoucherLoading.value = true;
-  try {
-    const excl = isEdit.value
-      ? decodeURIComponent(route.params.nomor as string)
-      : "";
-    rlVoucherOptions.value =
-      await voucherPembayaranFormApi.searchVoucherRealisasi("", excl);
-  } catch {
-    /* silent */
-  } finally {
-    rlVoucherLoading.value = false;
-  }
-};
-const doSearchRlVoucher = async () => {
-  rlVoucherLoading.value = true;
-  try {
-    const excl = isEdit.value
-      ? decodeURIComponent(route.params.nomor as string)
-      : "";
-    rlVoucherOptions.value =
-      await voucherPembayaranFormApi.searchVoucherRealisasi(
-        rlVoucherSearch.value,
-        excl,
-      );
-  } catch {
-    /* silent */
-  } finally {
-    rlVoucherLoading.value = false;
-  }
-};
-const selectRlVoucher = async (item: any) => {
-  const exists = rlDetail.value.some(
-    (d, i) => i !== activeRlIdx.value && d.vouNomor === item.Nomor,
-  );
-  if (exists) {
-    toast.warning("Voucher ini sudah diinputkan.");
-    return;
-  }
-  rlDetail.value[activeRlIdx.value].vouNomor = item.Nomor;
-  showRlVoucherModal.value = false;
-  await loadRlRow(activeRlIdx.value, item.Nomor);
 };
 </script>
 
 <template>
   <BaseForm
-    :title="isRealisasi ? 'Realisasi Voucher' : 'Voucher Pembayaran'"
+    title="Voucher Pembayaran"
     :menu-id="MENU_ID"
     :icon="IconFileInvoice"
     :is-loading="isLoading"
@@ -890,98 +561,7 @@ const selectRlVoucher = async (item: any) => {
   >
     <!-- ══ LEFT COLUMN ══ -->
     <template #left-column>
-      <!-- REALISASI MODE -->
-      <div v-if="isRealisasi" class="left-col-wrap">
-        <div class="form-section">
-          <div class="form-section-title">Informasi Pembayaran</div>
-
-          <div class="field-row">
-            <label class="field-lbl"
-              >Kode Bayar <span class="req">*</span></label
-            >
-            <div class="input-with-btn">
-              <input
-                v-model="rlForm.kodeBayar"
-                class="form-inp mono"
-                style="width: 80px; flex-shrink: 0"
-                placeholder="CS"
-                @blur="onKodeBayarBlur"
-                @keydown.enter="onKodeBayarBlur"
-              />
-              <input
-                :value="rlForm.namaBayar"
-                readonly
-                class="form-inp"
-                placeholder="Nama bayar"
-              />
-              <button
-                class="icon-btn"
-                type="button"
-                @click="openKodeBayarModal"
-              >
-                <IconSearch :size="13" :stroke-width="1.8" />
-              </button>
-            </div>
-          </div>
-
-          <div class="field-row">
-            <label class="field-lbl">Nomor</label>
-            <div class="input-with-badge">
-              <input
-                v-model="rlForm.nomor"
-                class="form-inp mono"
-                :readonly="!isGiro"
-                :class="{ readonly: !isGiro }"
-                :placeholder="isGiro ? 'Input nomor giro' : 'Otomatis'"
-              />
-              <span v-if="!isGiro" class="badge-info">Auto</span>
-            </div>
-          </div>
-
-          <div class="field-row">
-            <label class="field-lbl">Tanggal</label>
-            <input v-model="rlForm.tanggal" type="date" class="form-inp" />
-          </div>
-
-          <div class="field-row">
-            <label class="field-lbl">Tanggal Tempo</label>
-            <input v-model="rlForm.tanggalTempo" type="date" class="form-inp" />
-          </div>
-
-          <div class="field-row">
-            <label class="field-lbl">Account <span class="req">*</span></label>
-            <div class="input-with-btn">
-              <input
-                v-model="rlForm.account"
-                class="form-inp mono"
-                placeholder="Kode account / rekening"
-                @blur="onAccountBlur"
-                @keydown.enter="onAccountBlur"
-              />
-              <button
-                class="icon-btn"
-                type="button"
-                @click="openAccountModal"
-                title="Cari dari rekening perusahaan"
-              >
-                <IconSearch :size="13" :stroke-width="1.8" />
-              </button>
-            </div>
-          </div>
-
-          <div class="field-row">
-            <label class="field-lbl">Bank</label>
-            <input
-              :value="rlForm.namaAccount"
-              readonly
-              class="form-inp"
-              placeholder="Nama bank"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div v-else class="left-col-wrap">
+      <div class="left-col-wrap">
         <!-- Pin5 status badge -->
         <div
           v-if="pin5Config"
@@ -1022,7 +602,6 @@ const selectRlVoucher = async (item: any) => {
             />
           </div>
 
-          <!-- PPN -->
           <div class="field-row">
             <label class="field-lbl">PPN</label>
             <div class="ppn-row">
@@ -1081,7 +660,6 @@ const selectRlVoucher = async (item: any) => {
             </div>
           </div>
 
-          <!-- Rekening -->
           <div class="field-row">
             <label class="field-lbl">Rekening</label>
             <input
@@ -1093,7 +671,6 @@ const selectRlVoucher = async (item: any) => {
             />
           </div>
 
-          <!-- Bank & Cabang -->
           <div class="field-row-2col">
             <div class="field-row">
               <label class="field-lbl">Bank</label>
@@ -1117,7 +694,6 @@ const selectRlVoucher = async (item: any) => {
             </div>
           </div>
 
-          <!-- Atas Nama -->
           <div class="field-row">
             <label class="field-lbl">Atas Nama</label>
             <input
@@ -1134,119 +710,12 @@ const selectRlVoucher = async (item: any) => {
 
     <!-- ══ RIGHT COLUMN ══ -->
     <template #right-column>
-      <!-- REALISASI MODE -->
-      <div v-if="isRealisasi" class="right-wrap">
-        <div class="detail-section">
-          <div class="section-hdr">
-            <span class="section-title">Detail Voucher</span>
-            <v-btn
-              size="small"
-              color="primary"
-              variant="tonal"
-              @click="addRlRow"
-            >
-              <template #prepend
-                ><IconPlus :size="13" :stroke-width="2"
-              /></template>
-              Tambah
-            </v-btn>
-          </div>
-          <div class="tbl-wrap">
-            <table class="detail-tbl">
-              <thead>
-                <tr>
-                  <th style="width: 30px">No</th>
-                  <th style="min-width: 200px">Nomor Voucher</th>
-                  <th style="min-width: 200px">Nama Supplier</th>
-                  <th style="width: 100px">Tgl Voucher</th>
-                  <th style="width: 130px">Nilai</th>
-                  <th style="width: 28px"></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(d, idx) in rlDetail" :key="idx">
-                  <td class="tc">{{ idx + 1 }}</td>
-                  <td>
-                    <div class="d-flex align-center gap-1">
-                      <input
-                        v-model="d.vouNomor"
-                        class="cell-inp mono"
-                        placeholder="Nomor voucher..."
-                        @keydown.enter.prevent="onRlVouEnter(idx)"
-                      />
-                      <button
-                        type="button"
-                        class="sup-btn"
-                        @click.prevent="openRlVoucherModal(idx)"
-                      >
-                        <IconSearch :size="11" />
-                      </button>
-                    </div>
-                  </td>
-                  <td style="font-size: 11px">{{ d.supplier || "-" }}</td>
-                  <td class="tc" style="font-size: 10px">
-                    {{ fmtDate(d.tanggalVou) }}
-                  </td>
-                  <td>
-                    <input
-                      :value="formatNum(d.nilai)"
-                      type="text"
-                      inputmode="numeric"
-                      class="cell-inp tr"
-                      @focus="
-                        (e) => {
-                          (e.target as HTMLInputElement).value = d.nilai
-                            ? String(d.nilai)
-                            : '';
-                        }
-                      "
-                      @input="(e) => onRlNilaiInput(d, e)"
-                      @blur="(e) => onRlNilaiBlur(d, e)"
-                    />
-                  </td>
-                  <td class="tc">
-                    <button
-                      class="del-btn"
-                      type="button"
-                      @click.prevent="removeRlRow(idx)"
-                    >
-                      <IconTrash :size="12" :stroke-width="1.8" />
-                    </button>
-                  </td>
-                </tr>
-                <tr v-if="!rlDetail.length">
-                  <td colspan="6" class="empty-td">
-                    Belum ada detail. Klik Tambah.
-                  </td>
-                </tr>
-              </tbody>
-              <tfoot v-if="rlDetail.length">
-                <tr class="foot-row">
-                  <td colspan="4" class="tr foot-lbl">Total</td>
-                  <td class="tr foot-val">{{ fmt(totalRealisasi) }}</td>
-                  <td></td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
-
-        <!-- Summary bar realisasi -->
-        <div class="summary-bar">
-          <span class="sbar-lbl-grand">Total Pembayaran</span>
-          <span class="sbar-val-grand">{{ fmt(totalRealisasi) }}</span>
-        </div>
-      </div>
-
-      <!-- VOUCHER MODE (existing) -->
-      <div v-else class="right-wrap">
+      <div class="right-wrap">
         <!-- ── Detail Nota ── -->
         <div class="detail-section" style="flex: 3">
           <div class="section-hdr">
             <span class="section-title">Detail Nota</span>
             <div class="d-flex align-center gap-2">
-              <!-- Info pintasan -->
-              <!-- Ganti blok hint-trigger: -->
               <div class="hint-trigger">
                 <button
                   type="button"
@@ -1324,7 +793,6 @@ const selectRlVoucher = async (item: any) => {
                 <tr v-for="(d, idx) in detail" :key="idx">
                   <td class="tc">{{ idx + 1 }}</td>
 
-                  <!-- Nomor + type search buttons -->
                   <td>
                     <div class="d-flex align-center gap-1">
                       <input
@@ -1340,7 +808,6 @@ const selectRlVoucher = async (item: any) => {
                         <option value="MMT">BPB MMT</option>
                         <option value="BPE">BPB PO Ext MMT</option>
                         <option value="BPG">BPB Non Bahan</option>
-                        <!-- Tambah tipe lain nanti -->
                       </select>
                       <button
                         type="button"
@@ -1386,7 +853,6 @@ const selectRlVoucher = async (item: any) => {
                     {{ d.keterangan || "-" }}
                   </td>
 
-                  <!-- Nilai — readonly jika RET (Delphi: RET Col5 tidak bisa diubah) -->
                   <td>
                     <input
                       :value="formatNum(d.nilai)"
@@ -1408,15 +874,10 @@ const selectRlVoucher = async (item: any) => {
                           if (d.tipe !== 'RET') onNilaiInput(d, e);
                         }
                       "
-                      @blur="
-                        (e) => {
-                          onNilaiBlur(d, e);
-                        }
-                      "
+                      @blur="(e) => onNilaiBlur(d, e)"
                     />
                   </td>
 
-                  <!-- Jml BS -->
                   <td>
                     <input
                       :value="formatNum(d.bs)"
@@ -1435,7 +896,6 @@ const selectRlVoucher = async (item: any) => {
                     />
                   </td>
 
-                  <!-- Tarif -->
                   <td>
                     <input
                       :value="formatNum(d.tarif)"
@@ -1454,12 +914,9 @@ const selectRlVoucher = async (item: any) => {
                     />
                   </td>
 
-                  <!-- Potongan (readonly computed) -->
                   <td class="tr cell-computed">
                     {{ d.potongan ? fmt(d.potongan) : "" }}
                   </td>
-
-                  <!-- Total (readonly computed, bold) -->
                   <td class="tr cell-total">{{ fmt(d.total) }}</td>
 
                   <td class="tc">
@@ -1543,7 +1000,6 @@ const selectRlVoucher = async (item: any) => {
                       placeholder="pcs/kg..."
                     />
                   </td>
-                  <!-- Jumlah -->
                   <td>
                     <input
                       :value="formatNum(b.jumlah)"
@@ -1561,7 +1017,6 @@ const selectRlVoucher = async (item: any) => {
                       @blur="(e) => onBahanJumlahBlur(b, e)"
                     />
                   </td>
-                  <!-- Harga / Tarif -->
                   <td>
                     <input
                       :value="formatNum(b.harga)"
@@ -1579,7 +1034,6 @@ const selectRlVoucher = async (item: any) => {
                       @blur="(e) => onBahanHargaBlur(b, e)"
                     />
                   </td>
-                  <!-- Nilai = Jumlah * Harga (readonly computed) -->
                   <td class="tr cell-total">{{ fmt(b.nilai) }}</td>
                   <td class="tc">
                     <button
@@ -1608,7 +1062,7 @@ const selectRlVoucher = async (item: any) => {
           </div>
         </div>
 
-        <!-- Summary bar — Total | Discount | Grand Total -->
+        <!-- ── Summary bar ── -->
         <div class="summary-bar">
           <div class="sbar-item">
             <span class="sbar-lbl">Total</span>
@@ -1801,124 +1255,6 @@ const selectRlVoucher = async (item: any) => {
       </v-card-text>
       <v-card-actions class="pa-3" style="border-top: 1px solid #e0e0e0">
         <v-btn variant="text" @click="showNotaModal = false">Tutup</v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
-
-  <!-- ── Modal: Kode Bayar ── -->
-  <SearchModal
-    v-model="showKodeBayarModal"
-    title="Pilih Kode Bayar"
-    :columns="[
-      { key: 'kode', title: 'Kode', width: '80px' },
-      { key: 'nama', title: 'Nama Bayar' },
-    ]"
-    :items="kodeBayarOptions"
-    :loading="kodeBayarLoading"
-    :server-search="true"
-    search-placeholder="Cari kode bayar..."
-    :search-keys="['kode', 'nama']"
-    @select="selectKodeBayar"
-    @search="searchKodeBayarDebounced"
-  />
-
-  <!-- ── Modal: Account ── -->
-  <SearchModal
-    v-model="showAccountModal"
-    title="Pilih Account"
-    :columns="[
-      { key: 'rekening', title: 'Rekening', width: '140px' },
-      { key: 'bank', title: 'Bank', width: '120px' },
-      { key: 'atasnama', title: 'Atas Nama' },
-    ]"
-    :items="accountOptions"
-    :loading="accountLoading"
-    :server-search="true"
-    search-placeholder="Cari rekening atau bank..."
-    :search-keys="['rekening', 'bank', 'atasnama']"
-    @select="selectAccount"
-    @search="searchAccountDebounced"
-  />
-
-  <!-- ── Modal: Voucher Realisasi ── -->
-  <v-dialog v-model="showRlVoucherModal" max-width="700" scrollable>
-    <v-card rounded="lg">
-      <v-card-title class="modal-header">Pilih Voucher Pembayaran</v-card-title>
-      <v-card-text class="pa-3 pt-2" style="max-height: 520px">
-        <div class="modal-search-bar">
-          <div class="modal-search-wrap">
-            <IconSearch :size="14" class="modal-search-icon" />
-            <input
-              v-model="rlVoucherSearch"
-              class="modal-search-input"
-              placeholder="Cari nomor atau supplier..."
-              @keydown.enter="doSearchRlVoucher"
-            />
-            <button
-              v-if="rlVoucherSearch"
-              class="modal-clear-btn"
-              @click="
-                rlVoucherSearch = '';
-                doSearchRlVoucher();
-              "
-            >
-              ×
-            </button>
-          </div>
-          <v-btn
-            size="small"
-            variant="flat"
-            color="#2e7d32"
-            style="color: white"
-            :loading="rlVoucherLoading"
-            @click="doSearchRlVoucher"
-            >Cari</v-btn
-          >
-        </div>
-        <div class="modal-table-wrap">
-          <table class="modal-tbl">
-            <thead>
-              <tr>
-                <th style="min-width: 160px">Nomor Voucher</th>
-                <th style="width: 100px">Tanggal</th>
-                <th style="min-width: 200px">Supplier</th>
-                <th style="width: 120px; text-align: right">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-if="rlVoucherLoading">
-                <td colspan="4" class="modal-loading">
-                  <v-progress-circular
-                    size="16"
-                    width="2"
-                    indeterminate
-                    color="primary"
-                  />
-                  Memuat...
-                </td>
-              </tr>
-              <template v-else>
-                <tr
-                  v-for="v in rlVoucherOptions"
-                  :key="v.Nomor"
-                  class="modal-row"
-                  @click="selectRlVoucher(v)"
-                >
-                  <td class="mono-cell">{{ v.Nomor }}</td>
-                  <td>{{ fmtDate(v.Tanggal) }}</td>
-                  <td>{{ v.Supplier }}</td>
-                  <td class="tr">{{ fmt(v.Total) }}</td>
-                </tr>
-                <tr v-if="!rlVoucherOptions.length">
-                  <td colspan="4" class="empty-td">Tidak ada data.</td>
-                </tr>
-              </template>
-            </tbody>
-          </table>
-        </div>
-      </v-card-text>
-      <v-card-actions class="pa-3" style="border-top: 1px solid #e0e0e0">
-        <v-btn variant="text" @click="showRlVoucherModal = false">Tutup</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

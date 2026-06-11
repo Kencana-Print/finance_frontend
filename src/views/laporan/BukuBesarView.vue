@@ -102,16 +102,21 @@ const modalItems = ref<AccountItem[]>([]);
 const modalPage = ref(1);
 const MODAL_PAGE_SIZE = 50;
 
-const modalPaged = computed(() => {
+const modalFiltered = computed(() => {
   const q = modalSearch.value.toLowerCase();
-  const filtered = q
-    ? modalItems.value.filter(
-        (a) =>
-          a.kode.toLowerCase().includes(q) || a.nama.toLowerCase().includes(q),
-      )
-    : modalItems.value;
-  return filtered.slice(0, modalPage.value * MODAL_PAGE_SIZE);
+  if (!q) return modalItems.value;
+  return modalItems.value.filter(
+    (a) => a.kode.toLowerCase().includes(q) || a.nama.toLowerCase().includes(q),
+  );
 });
+
+const modalPaged = computed(() =>
+  modalFiltered.value.slice(0, modalPage.value * MODAL_PAGE_SIZE),
+);
+
+const modalHasMore = computed(
+  () => modalPaged.value.length < modalFiltered.value.length,
+);
 
 let debounceTimer: ReturnType<typeof setTimeout>;
 const onModalSearchInput = () => {
@@ -125,7 +130,6 @@ const openModal = async () => {
   showModal.value = true;
   modalSearch.value = "";
   modalPage.value = 1;
-  if (modalItems.value.length > 0) return;
   modalLoading.value = true;
   try {
     const cabang = authStore.userCabang || "P01";
@@ -139,7 +143,6 @@ const openModal = async () => {
 };
 
 const selectAccount = (item: AccountItem) => {
-  // Update sekaligus via filterState agar hanya trigger satu watch
   filterState.value = {
     ...filterState.value,
     rekkode: item.kode,
@@ -368,20 +371,28 @@ const doExport = () =>
   <v-dialog v-model="showModal" max-width="520" scrollable>
     <v-card rounded="lg">
       <v-card-title
-        class="text-body-1 font-weight-bold pa-4 pb-2"
-        style="border-top: 3px solid #2e7d32"
+        class="pa-4 pb-2"
+        style="font-size: 13px; font-weight: 700; border-top: 3px solid #2e7d32"
       >
         Pilih Account
       </v-card-title>
-      <v-card-text class="pa-3 pt-0">
-        <input
-          v-model="modalSearch"
-          type="text"
-          class="modal-search-inp"
-          placeholder="Cari kode atau nama..."
-          @input="onModalSearchInput"
-          autofocus
-        />
+
+      <v-card-text class="pa-3 pt-2" style="max-height: 480px">
+        <!-- Search + total -->
+        <div class="modal-search-row">
+          <input
+            v-model="modalSearch"
+            type="text"
+            class="modal-search-inp"
+            placeholder="Cari kode atau nama..."
+            @input="onModalSearchInput"
+            autofocus
+          />
+          <span class="modal-total-badge">
+            {{ modalFiltered.length.toLocaleString("id-ID") }} data
+          </span>
+        </div>
+
         <div v-if="modalLoading" class="modal-loading">
           <v-progress-circular indeterminate color="primary" size="28" />
         </div>
@@ -395,12 +406,44 @@ const doExport = () =>
             <span class="modal-kode">{{ item.kode }}</span>
             <span class="modal-nama">{{ item.nama }}</span>
           </div>
+
+          <!-- Load more -->
+          <div v-if="modalHasMore" class="modal-load-more">
+            <v-btn
+              size="small"
+              variant="tonal"
+              color="primary"
+              @click="modalPage++"
+            >
+              Tampilkan lebih banyak
+              <span class="modal-load-more-count">
+                ({{ modalPaged.length }} / {{ modalFiltered.length }})
+              </span>
+            </v-btn>
+          </div>
+
+          <!-- Sudah semua -->
+          <div v-else-if="modalPaged.length > 0" class="modal-end-info">
+            Menampilkan semua
+            {{ modalFiltered.length.toLocaleString("id-ID") }} data
+          </div>
+
           <div v-if="!modalPaged.length" class="modal-empty">
             Tidak ada data.
           </div>
         </div>
       </v-card-text>
+
       <v-card-actions class="pa-3" style="border-top: 1px solid #eee">
+        <span class="modal-footer-info">
+          Total:
+          <strong>{{ modalItems.length.toLocaleString("id-ID") }}</strong>
+          account
+          <template v-if="modalSearch">
+            · Hasil filter:
+            <strong>{{ modalFiltered.length.toLocaleString("id-ID") }}</strong>
+          </template>
+        </span>
         <v-spacer />
         <v-btn variant="text" size="small" @click="showModal = false"
           >Tutup</v-btn
@@ -522,5 +565,55 @@ const doExport = () =>
   padding: 20px;
   color: #9e9e9e;
   font-size: 12px;
+}
+.modal-search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.modal-search-inp {
+  flex: 1;
+  height: 34px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0 10px;
+  font-size: 12px;
+  outline: none;
+  box-sizing: border-box;
+}
+.modal-search-inp:focus {
+  border-color: #2e7d32;
+}
+.modal-total-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #2e7d32;
+  background: #f0fdf4;
+  border: 1px solid #c8e6c9;
+  border-radius: 20px;
+  padding: 3px 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.modal-load-more {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0 4px;
+}
+.modal-load-more-count {
+  font-size: 10px;
+  opacity: 0.7;
+  margin-left: 4px;
+}
+.modal-end-info {
+  text-align: center;
+  font-size: 10px;
+  color: #9ca3af;
+  padding: 8px 0 2px;
+}
+.modal-footer-info {
+  font-size: 11px;
+  color: #6b7280;
 }
 </style>
