@@ -33,7 +33,6 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
   optimizeDeps: {
-    include: ["jquery"],
-    exclude: ["jquery-ui-dist", "pivottable"],
+    include: ["jquery", "pivottable"],
   },
 });
