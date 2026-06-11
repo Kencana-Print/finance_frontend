@@ -1,16 +1,15 @@
+// vite.config.ts
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import vuetify from "vite-plugin-vuetify";
 import { fileURLToPath, URL } from "node:url";
 import inject from "@rollup/plugin-inject";
-import commonjs from "@rollup/plugin-commonjs";
 import pkg from "./package.json";
 
 export default defineConfig({
   plugins: [
     vue(),
     vuetify({ autoImport: true }),
-    commonjs(),
     inject({
       $: "jquery",
       jQuery: "jquery",
@@ -34,11 +33,6 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
   optimizeDeps: {
-    include: ["jquery", "pivottable", "jquery-ui-dist"],
-  },
-  build: {
-    rollupOptions: {
-      plugins: [commonjs()],
-    },
+    include: ["jquery", "pivottable"],
   },
 });
