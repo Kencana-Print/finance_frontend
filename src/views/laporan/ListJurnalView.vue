@@ -110,6 +110,7 @@ const loadData = async () => {
       filterState.value.startDate,
       filterState.value.endDate,
     );
+    pivotRendered.value = false; // data baru → pivot perlu di-render ulang
   } catch (e: any) {
     if (isAuthExpiredError(e)) return;
     toast.error(e.response?.data?.message ?? "Gagal memuat data.");
@@ -118,6 +119,7 @@ const loadData = async () => {
     if (activeTab.value === "pivot") {
       await nextTick();
       renderPivot();
+      pivotRendered.value = true;
     }
   }
 };
@@ -134,7 +136,6 @@ const renderPivot = async () => {
 
   await initPivot();
 
-  // Simpan/restore config pivot dari localStorage
   let savedConfig: Record<string, unknown> = {};
   try {
     const raw = localStorage.getItem("pivot_config_list_jurnal");
@@ -143,28 +144,8 @@ const renderPivot = async () => {
     /* ignore */
   }
 
-  // Reshape: 1 baris → 2 baris (Debet + Kredit)
-  // cols: Tahun + Bulan + Jenis → hasilnya 2026/6/Debet dan 2026/6/Kredit
-  const plainData: Record<string, any>[] = [];
-  for (const r of items.value) {
-    const base = {
-      Bulan: String(r.Bulan),
-      Tahun: String(r.Tahun),
-      Tanggal: r.Tanggal ?? "",
-      Account: r.Account ?? "",
-      AccountName: r.AccountName ?? "",
-      Keterangan: r.Keterangan ?? "",
-      DetailCC: r.DetailCC ?? "",
-    };
-    if (Number(r.Debet)) {
-      plainData.push({ ...base, Jenis: "Debet", Nilai: Number(r.Debet) });
-    }
-    if (Number(r.Kredit)) {
-      plainData.push({ ...base, Jenis: "Kredit", Nilai: Number(r.Kredit) });
-    }
-  }
+  const plainData = buildPlainData();
 
-  // Delphi: row=AccountName, col=Tahun+Bulan, data=Debet+Kredit
   (jq(pivotContainer.value) as any).empty().pivotUI(
     plainData,
     {
@@ -179,6 +160,7 @@ const renderPivot = async () => {
           "pivot_config_list_jurnal",
           JSON.stringify(config),
         );
+        pivotConfigVersion.value++;
       },
     },
     true,
@@ -190,34 +172,136 @@ const resetPivotConfig = () => {
   renderPivot();
 };
 
+const pivotRendered = ref(false);
+
 // Watch tab change → render pivot saat masuk tab pivot
 watch(activeTab, async (tab) => {
-  if (tab === "pivot") {
+  if (tab === "pivot" && !pivotRendered.value) {
     await nextTick();
     renderPivot();
+    pivotRendered.value = true;
   }
 });
 
 // ── Chart ─────────────────────────────────────────────────────────────
+const chartType = ref<"column" | "bar" | "line" | "area" | "pie">("column");
 const chartCanvasRef = ref<HTMLCanvasElement | null>(null);
+const pivotConfigVersion = ref(0);
 let chartInstance: any = null;
 
-const chartData = computed(() => {
-  const map = new Map<string, { debet: number; kredit: number }>();
-  for (const r of items.value) {
-    const key = r.AccountName || r.Account;
-    const cur = map.get(key) || { debet: 0, kredit: 0 };
-    cur.debet += Number(r.Debet);
-    cur.kredit += Number(r.Kredit);
-    map.set(key, cur);
+const getPivotConfig = () => {
+  let config: Record<string, any> = {};
+  try {
+    const raw = localStorage.getItem("pivot_config_list_jurnal");
+    if (raw) config = JSON.parse(raw);
+  } catch {
+    /* silent */
   }
-  return [...map.entries()]
-    .sort((a, b) => b[1].debet + b[1].kredit - (a[1].debet + a[1].kredit))
-    .slice(0, 15)
-    .map(([name, val]) => ({ name, ...val }));
+  return {
+    rows: (config.rows as string[]) ?? ["AccountName"],
+    cols: (config.cols as string[]) ?? ["Tahun", "Bulan", "Jenis"],
+    vals: (config.vals as string[]) ?? ["Nilai"],
+    aggregatorName: (config.aggregatorName as string) ?? "Sum",
+    exclusions: (config.exclusions as Record<string, string[]>) ?? {},
+    inclusions: (config.inclusions as Record<string, string[]>) ?? {},
+  };
+};
+
+// Bangun plainData (sama seperti renderPivot/doExportPivot)
+const buildPlainData = () => {
+  const plainData: Record<string, any>[] = [];
+  for (const r of items.value) {
+    const base = {
+      Bulan: String(r.Bulan),
+      Tahun: String(r.Tahun),
+      Tanggal: r.Tanggal ?? "",
+      Account: r.Account ?? "",
+      AccountName: r.AccountName ?? "",
+      Keterangan: r.Keterangan ?? "",
+      DetailCC: r.DetailCC ?? "",
+      Referensi: r.Referensi ?? "",
+      Nomor: r.Nomor ?? "",
+    };
+    if (Number(r.Debet)) {
+      plainData.push({ ...base, Jenis: "Debet", Nilai: Number(r.Debet) });
+    }
+    if (Number(r.Kredit)) {
+      plainData.push({ ...base, Jenis: "Kredit", Nilai: Number(r.Kredit) });
+    }
+  }
+  return plainData;
+};
+
+const chartData = computed(() => {
+  void pivotConfigVersion.value;
+  const { rows, cols, vals, aggregatorName, exclusions, inclusions } =
+    getPivotConfig();
+  let plainData = buildPlainData();
+
+  // Inclusions: jika attr punya inclusions, hanya tampilkan value yang ada di list
+  for (const attr of Object.keys(inclusions)) {
+    const allowed = new Set(inclusions[attr]);
+    if (allowed.size) {
+      plainData = plainData.filter((item) => allowed.has(item[attr] ?? ""));
+    }
+  }
+
+  // Exclusions: hilangkan value yang ada di list exclusions
+  for (const attr of Object.keys(exclusions)) {
+    const excluded = new Set(exclusions[attr]);
+    if (excluded.size) {
+      plainData = plainData.filter((item) => !excluded.has(item[attr] ?? ""));
+    }
+  }
+
+  const valField = vals[0] ?? "Nilai";
+  const rowKey = rows[0] ?? "AccountName";
+  const getColKey = (item: Record<string, any>) =>
+    cols.length ? cols.map((c) => item[c] ?? "").join(" / ") : "Total";
+
+  const map = new Map<string, Map<string, number>>();
+  const colSet = new Set<string>();
+
+  for (const item of plainData) {
+    const rowLabel = rows.length
+      ? rows.map((r) => item[r] ?? "").join(" / ")
+      : (item[rowKey] ?? "");
+    const colLabel = getColKey(item);
+    colSet.add(colLabel);
+
+    if (!map.has(rowLabel)) map.set(rowLabel, new Map());
+    const colMap = map.get(rowLabel)!;
+    const val = Number(item[valField]) || 0;
+
+    if (aggregatorName === "Count") {
+      colMap.set(colLabel, (colMap.get(colLabel) ?? 0) + 1);
+    } else {
+      colMap.set(colLabel, (colMap.get(colLabel) ?? 0) + val);
+    }
+  }
+
+  const rowLabels = [...map.entries()]
+    .map(([label, colMap]) => ({
+      label,
+      total: [...colMap.values()].reduce((s, v) => s + v, 0),
+    }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 20)
+    .map((r) => r.label);
+
+  const colLabels = [...colSet.values()].sort();
+
+  return {
+    labels: rowLabels,
+    colLabels,
+    datasets: colLabels.map((col) => ({
+      label: col,
+      data: rowLabels.map((row) => map.get(row)?.get(col) ?? 0),
+    })),
+  };
 });
 
-watch([activeTab, chartData], async ([tab]) => {
+watch([activeTab, chartData, chartType], async ([tab]) => {
   if (tab !== "chart") return;
   await nextTick();
   if (!chartCanvasRef.value) return;
@@ -225,19 +309,31 @@ watch([activeTab, chartData], async ([tab]) => {
   const {
     Chart,
     BarController,
+    LineController,
+    PieController,
     BarElement,
+    LineElement,
+    PointElement,
+    ArcElement,
     CategoryScale,
     LinearScale,
     Tooltip,
     Legend,
+    Filler,
   } = await import("chart.js");
   Chart.register(
     BarController,
+    LineController,
+    PieController,
     BarElement,
+    LineElement,
+    PointElement,
+    ArcElement,
     CategoryScale,
     LinearScale,
     Tooltip,
     Legend,
+    Filler,
   );
 
   if (chartInstance) {
@@ -245,28 +341,88 @@ watch([activeTab, chartData], async ([tab]) => {
     chartInstance = null;
   }
 
+  const palette = [
+    { bg: "rgba(46,125,50,0.75)", border: "#2e7d32" },
+    { bg: "rgba(21,101,192,0.65)", border: "#1565c0" },
+    { bg: "rgba(239,108,0,0.65)", border: "#ef6c00" },
+    { bg: "rgba(106,27,154,0.65)", border: "#6a1b9a" },
+    { bg: "rgba(198,40,40,0.65)", border: "#c62828" },
+    { bg: "rgba(0,105,92,0.65)", border: "#00695c" },
+  ];
+
+  const { labels, datasets } = chartData.value;
+
+  // ── Pie: hanya pakai dataset pertama, label = labels, data = nilai dataset pertama
+  if (chartType.value === "pie") {
+    const pieData = chartData.value.labels.map((_, i) =>
+      datasets.reduce((s, ds) => s + (ds.data[i] ?? 0), 0),
+    );
+    const pieColors = labels.map((_, i) => palette[i % palette.length]);
+    chartInstance = new Chart(chartCanvasRef.value, {
+      type: "pie",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Total",
+            data: pieData,
+            backgroundColor: pieColors.map((c) => c.bg),
+            borderColor: pieColors.map((c) => c.border),
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: "right" },
+          tooltip: {
+            callbacks: {
+              label: (ctx) =>
+                `${ctx.label}: ${new Intl.NumberFormat("id-ID").format(ctx.parsed ?? 0)}`,
+            },
+          },
+        },
+      },
+    });
+    return;
+  }
+
+  // ── Column / Bar / Line / Area
+  const isHorizontalBar = chartType.value === "bar";
+  const baseType =
+    chartType.value === "line" || chartType.value === "area" ? "line" : "bar";
+
   chartInstance = new Chart(chartCanvasRef.value, {
-    type: "bar",
+    type: baseType,
     data: {
-      labels: chartData.value.map((d) => d.name),
-      datasets: [
-        {
-          label: "Debet",
-          data: chartData.value.map((d) => d.debet),
-          backgroundColor: "rgba(46,125,50,0.75)",
-          borderColor: "#2e7d32",
+      labels,
+      datasets: datasets.map((ds, idx) => {
+        const color = palette[idx % palette.length];
+        if (baseType === "line") {
+          return {
+            label: ds.label,
+            data: ds.data,
+            borderColor: color.border,
+            backgroundColor:
+              chartType.value === "area" ? color.bg : color.border,
+            fill: chartType.value === "area",
+            tension: 0.25,
+            pointRadius: 2,
+          };
+        }
+        return {
+          label: ds.label,
+          data: ds.data,
+          backgroundColor: color.bg,
+          borderColor: color.border,
           borderWidth: 1,
-        },
-        {
-          label: "Kredit",
-          data: chartData.value.map((d) => d.kredit),
-          backgroundColor: "rgba(21,101,192,0.65)",
-          borderColor: "#1565c0",
-          borderWidth: 1,
-        },
-      ],
+        };
+      }),
     },
     options: {
+      indexAxis: isHorizontalBar ? "y" : "x",
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
@@ -274,12 +430,14 @@ watch([activeTab, chartData], async ([tab]) => {
         tooltip: {
           callbacks: {
             label: (ctx) =>
-              `${ctx.dataset.label}: ${new Intl.NumberFormat("id-ID").format(ctx.parsed.y ?? 0)}`,
+              `${ctx.dataset.label}: ${new Intl.NumberFormat("id-ID").format(
+                (isHorizontalBar ? ctx.parsed.x : ctx.parsed.y) ?? 0,
+              )}`,
           },
         },
       },
       scales: {
-        y: {
+        [isHorizontalBar ? "x" : "y"]: {
           ticks: {
             callback: (v) =>
               new Intl.NumberFormat("id-ID", { notation: "compact" }).format(
@@ -287,11 +445,15 @@ watch([activeTab, chartData], async ([tab]) => {
               ),
           },
         },
-        x: { ticks: { maxRotation: 35, font: { size: 10 } } },
+        [isHorizontalBar ? "y" : "x"]: {
+          ticks: { maxRotation: 35, font: { size: 10 } },
+        },
       },
     },
   });
 });
+
+const hasChartData = computed(() => chartData.value.labels.length > 0);
 
 const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
 const fmtDate = (v: string) => {
@@ -353,87 +515,91 @@ const doExportPivot = async () => {
 
 <template>
   <!-- ── Grid tab ── -->
-  <BaseBrowse
-    v-if="activeTab === 'grid'"
-    title="List Jurnal"
-    :icon="IconList"
-    :menu-id="MENU_ID"
-    :headers="headers"
-    :items="items"
-    :is-loading="isLoading"
-    :fixed-layout="false"
-    item-value="Nomor"
-    :filter-values="filterValues"
-    @refresh="loadData"
-  >
-    <template #filter-left>
-      <div class="filter-group">
-        <span class="filter-lbl">Periode</span>
-        <input v-model="startDate" type="date" class="date-inp" />
-        <span class="filter-sep">s/d</span>
-        <input v-model="endDate" type="date" class="date-inp" />
-      </div>
-    </template>
+  <div v-show="activeTab === 'grid'">
+    <BaseBrowse
+      title="List Jurnal"
+      :icon="IconList"
+      :menu-id="MENU_ID"
+      :headers="headers"
+      :items="items"
+      :is-loading="isLoading"
+      :fixed-layout="false"
+      item-value="Nomor"
+      :filter-values="filterValues"
+      @refresh="loadData"
+    >
+      <template #filter-left>
+        <div class="filter-group">
+          <span class="filter-lbl">Periode</span>
+          <input v-model="startDate" type="date" class="date-inp" />
+          <span class="filter-sep">s/d</span>
+          <input v-model="endDate" type="date" class="date-inp" />
+        </div>
+      </template>
 
-    <template #filter-right-prepend>
-      <div class="filter-divider" />
-      <div class="tab-wrap">
-        <button class="tab-btn active">
-          <IconTable :size="13" :stroke-width="1.8" /> Grid Data
-        </button>
-        <button class="tab-btn" @click="activeTab = 'pivot'">
-          <IconList :size="13" :stroke-width="1.8" /> Pivot
-        </button>
-        <button class="tab-btn" @click="activeTab = 'chart'">
-          <IconChartBar :size="13" :stroke-width="1.8" /> Grafik
-        </button>
-      </div>
-    </template>
+      <template #filter-right-prepend>
+        <div class="filter-divider" />
+        <div class="tab-wrap">
+          <button class="tab-btn active">
+            <IconTable :size="13" :stroke-width="1.8" /> Grid Data
+          </button>
+          <button class="tab-btn" @click="activeTab = 'pivot'">
+            <IconList :size="13" :stroke-width="1.8" /> Pivot
+          </button>
+          <button class="tab-btn" @click="activeTab = 'chart'">
+            <IconChartBar :size="13" :stroke-width="1.8" /> Grafik
+          </button>
+        </div>
+      </template>
 
-    <template #extra-actions>
-      <v-btn size="small" variant="tonal" color="success" @click="doExport">
-        <template #prepend
-          ><IconFileSpreadsheet :size="13" :stroke-width="1.8"
-        /></template>
-        Export
-      </v-btn>
-    </template>
+      <template #extra-actions>
+        <v-btn size="small" variant="tonal" color="success" @click="doExport">
+          <template #prepend
+            ><IconFileSpreadsheet :size="13" :stroke-width="1.8"
+          /></template>
+          Export
+        </v-btn>
+      </template>
 
-    <template #item.Debet="{ value }">
-      <span class="num-cell">{{ value ? fmt(value) : "" }}</span>
-    </template>
-    <template #item.Kredit="{ value }">
-      <span class="num-cell">{{ value ? fmt(value) : "" }}</span>
-    </template>
-    <template #item.Tanggal="{ value }">
-      <span>{{ fmtDate(value) }}</span>
-    </template>
+      <template #item.Debet="{ value }">
+        <span class="num-cell">{{ value ? fmt(value) : "" }}</span>
+      </template>
+      <template #item.Kredit="{ value }">
+        <span class="num-cell">{{ value ? fmt(value) : "" }}</span>
+      </template>
+      <template #item.Tanggal="{ value }">
+        <span>{{ fmtDate(value) }}</span>
+      </template>
 
-    <template #summary-row="{ filteredItems }">
-      <span class="summary-lbl">Total Debet</span>
-      <span class="summary-val">
-        {{
-          fmt(
-            filteredItems.reduce((s: number, r: any) => s + Number(r.Debet), 0),
-          )
-        }}
-      </span>
-      <span class="summary-lbl" style="margin-left: 24px">Total Kredit</span>
-      <span class="summary-val">
-        {{
-          fmt(
-            filteredItems.reduce(
-              (s: number, r: any) => s + Number(r.Kredit),
-              0,
-            ),
-          )
-        }}
-      </span>
-    </template>
-  </BaseBrowse>
+      <template #summary-row="{ filteredItems }">
+        <span class="summary-lbl">Total Debet</span>
+        <span class="summary-val">
+          {{
+            fmt(
+              filteredItems.reduce(
+                (s: number, r: any) => s + Number(r.Debet),
+                0,
+              ),
+            )
+          }}
+        </span>
+        <span class="summary-lbl" style="margin-left: 24px">Total Kredit</span>
+        <span class="summary-val">
+          {{
+            fmt(
+              filteredItems.reduce(
+                (s: number, r: any) => s + Number(r.Kredit),
+                0,
+              ),
+            )
+          }}
+        </span>
+      </template>
+    </BaseBrowse>
+  </div>
 
   <!-- ── Pivot & Chart tab ── -->
-  <div v-else class="lap-layout">
+  <div v-show="activeTab !== 'grid'" class="lap-layout">
     <div class="lap-header">
       <div class="page-title-section">
         <div class="title-icon-wrap">
@@ -492,7 +658,7 @@ const doExportPivot = async () => {
       </div>
 
       <!-- Pivot -->
-      <div v-if="activeTab === 'pivot'" class="tab-inner">
+      <div v-show="activeTab === 'pivot'" class="tab-inner">
         <div v-if="isLoading" class="tab-loading">
           <v-progress-circular indeterminate color="primary" size="36" />
           <span>Memuat data...</span>
@@ -533,15 +699,27 @@ const doExportPivot = async () => {
       </div>
 
       <!-- Chart -->
-      <div v-if="activeTab === 'chart'" class="tab-inner">
+      <div v-show="activeTab === 'chart'" class="tab-inner">
         <div v-if="isLoading" class="tab-loading">
           <v-progress-circular indeterminate color="primary" size="36" />
         </div>
-        <div v-else-if="!chartData.length" class="tab-empty">
+        <div v-else-if="!hasChartData" class="tab-empty">
           Tidak ada data untuk periode ini.
         </div>
         <div v-else class="chart-wrap">
-          <div class="chart-title">Top 15 Account — Debet & Kredit</div>
+          <div class="chart-header">
+            <div class="chart-title">
+              {{ getPivotConfig().rows.join(" / ") }} berdasarkan
+              {{ getPivotConfig().cols.join(" / ") }}
+            </div>
+            <select v-model="chartType" class="chart-type-select">
+              <option value="column">Column</option>
+              <option value="bar">Bar</option>
+              <option value="line">Line</option>
+              <option value="area">Area</option>
+              <option value="pie">Pie</option>
+            </select>
+          </div>
           <div class="chart-container">
             <canvas ref="chartCanvasRef" />
           </div>
@@ -921,5 +1099,34 @@ const doExportPivot = async () => {
 }
 .pvtFilterBox button:last-of-type:hover {
   background: #f3f4f6 !important;
+}
+
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+.chart-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+  margin-bottom: 0;
+}
+.chart-type-select {
+  height: 30px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  outline: none;
+  background: white;
+  color: #374151;
+  cursor: pointer;
+}
+.chart-type-select:focus {
+  border-color: #2e7d32;
 }
 </style>
