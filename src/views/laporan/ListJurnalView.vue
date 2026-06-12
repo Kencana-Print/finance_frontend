@@ -92,7 +92,7 @@ const headers = [
     width: "100px",
     align: "center" as const,
   },
-  { key: "Nomor", title: "Nomor", width: "200px" },
+  { key: "nomor", title: "Nomor", width: "200px" },
   { key: "Referensi", title: "Referensi", width: "200px" },
   { key: "Account", title: "Account", width: "100px" },
   { key: "AccountName", title: "Nama Account", width: "240px" },
@@ -150,6 +150,7 @@ const renderPivot = async () => {
     const base = {
       Bulan: String(r.Bulan),
       Tahun: String(r.Tahun),
+      Tanggal: r.Tanggal ?? "",
       Account: r.Account ?? "",
       AccountName: r.AccountName ?? "",
       Keterangan: r.Keterangan ?? "",
@@ -167,7 +168,7 @@ const renderPivot = async () => {
   (jq(pivotContainer.value) as any).empty().pivotUI(
     plainData,
     {
-      rows: (savedConfig.rows as string[]) ?? ["AccountName"],
+      rows: (savedConfig.rows as string[]) ?? ["AccountName", "Tanggal"],
       cols: (savedConfig.cols as string[]) ?? ["Tahun", "Bulan", "Jenis"],
       vals: (savedConfig.vals as string[]) ?? ["Nilai"],
       aggregatorName: (savedConfig.aggregatorName as string) ?? "Sum",
@@ -502,8 +503,8 @@ const doExportPivot = async () => {
         <div v-else class="pivot-wrapper">
           <div class="pivot-hint">
             <span>
-              Drag field ke baris/kolom. Tersedia: AccountName, Account, Tahun,
-              Bulan, Tanggal, Nomor, Referensi, Jenis, Nilai, DetailCC.
+              Drag field ke baris/kolom. Tersedia: AccountName, Account,
+              Tanggal, Tahun, Bulan, Nomor, Referensi, Jenis, Nilai, DetailCC.
             </span>
             <div class="d-flex gap-2">
               <v-btn
