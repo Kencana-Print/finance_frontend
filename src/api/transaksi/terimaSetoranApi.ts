@@ -41,4 +41,8 @@ export const terimaSetoranApi = {
     });
     return data.data as TerimaSetoranDetailRow[];
   },
+  getBrowsePendingAll: async () => {
+    const { data } = await api.get("/transaksi/terima-setoran/pending-all");
+    return data.data as TerimaSetoranRow[];
+  },
 };

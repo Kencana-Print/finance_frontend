@@ -230,7 +230,12 @@ const chartBars = computed(() => {
         <div
           v-if="canViewKasbon"
           class="task-card task-red"
-          @click="router.push('/laporan/kasbon-belum-selesai')"
+          @click="
+            router.push({
+              path: '/transaksi/uang-muka',
+              query: { filter: 'pending' },
+            })
+          "
         >
           <div class="task-top">
             <div class="task-icon-wrap red">
@@ -254,7 +259,12 @@ const chartBars = computed(() => {
         <div
           v-if="canViewTransfer"
           class="task-card task-orange"
-          @click="router.push('/transaksi/pengajuan-transfer')"
+          @click="
+            router.push({
+              path: '/transaksi/pengajuan-transfer',
+              query: { filter: 'pending' },
+            })
+          "
         >
           <div class="task-top">
             <div class="task-icon-wrap orange">
@@ -278,7 +288,12 @@ const chartBars = computed(() => {
         <div
           v-if="canViewSetoran"
           class="task-card task-blue"
-          @click="router.push('/transaksi/terima-setoran')"
+          @click="
+            router.push({
+              path: '/transaksi/terima-setoran',
+              query: { filter: 'pending' },
+            })
+          "
         >
           <div class="task-top">
             <div class="task-icon-wrap blue">
@@ -357,7 +372,12 @@ const chartBars = computed(() => {
           :class="
             summaryData.voucherPt?.count > 0 ? 'task-orange' : 'task-green'
           "
-          @click="router.push('/transaksi/voucher-pembayaran')"
+          @click="
+            router.push({
+              path: '/transaksi/voucher-pembayaran',
+              query: { filter: 'pending' },
+            })
+          "
         >
           <div class="task-top">
             <div

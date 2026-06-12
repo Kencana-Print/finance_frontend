@@ -41,6 +41,16 @@ export const pengajuanTransferApi = {
     });
     return data.data as PengajuanTransferDetailRow[];
   },
+  getBrowsePendingAll: async () => {
+    const { data } = await api.get("/transaksi/pengajuan-transfer/pending-all");
+    return data.data as PengajuanTransferRow[];
+  },
+  getBrowseDetailPendingAll: async () => {
+    const { data } = await api.get(
+      "/transaksi/pengajuan-transfer/pending-all/detail",
+    );
+    return data.data as PengajuanTransferDetailRow[];
+  },
   getStatus: async (nomor: string) => {
     const { data } = await api.get(
       `/transaksi/pengajuan-transfer/status/${encodeURIComponent(nomor)}`,

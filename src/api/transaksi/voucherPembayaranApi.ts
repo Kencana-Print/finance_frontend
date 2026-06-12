@@ -49,6 +49,16 @@ export const voucherPembayaranApi = {
     });
     return data.data as VoucherDetailRow[];
   },
+  getBrowsePendingAll: async () => {
+    const { data } = await api.get("/transaksi/voucher-pembayaran/pending-all");
+    return data.data as VoucherRow[];
+  },
+  getBrowseDetailPendingAll: async () => {
+    const { data } = await api.get(
+      "/transaksi/voucher-pembayaran/pending-all/detail",
+    );
+    return data.data as VoucherDetailRow[];
+  },
   delete: async (nomor: string) => {
     return api.delete(
       `/transaksi/voucher-pembayaran/${encodeURIComponent(nomor)}`,

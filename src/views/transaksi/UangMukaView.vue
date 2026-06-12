@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import { useRouter } from "vue-router";
+import { ref, watch, computed, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { useToast } from "vue-toastification";
 import { IconReceipt2, IconPrinter, IconCheck } from "@tabler/icons-vue";
 import BaseBrowse from "@/components/BaseBrowse.vue";
@@ -10,6 +10,7 @@ import { exportUangMuka } from "@/utils/exportExcel";
 
 const MENU_ID = "21";
 const toast = useToast();
+const route = useRoute();
 const router = useRouter();
 
 // ── Default filter: awal bulan s.d. hari ini ─────────────────────────
@@ -164,6 +165,32 @@ const onCetakSelesai = () => {
     "_blank",
   );
 };
+
+const isPendingFilter = computed(() => route.query.filter === "pending");
+
+const itemsDisplayed = computed(() =>
+  isPendingFilter.value ? (items.value ?? []) : (items.value ?? []),
+);
+
+const pendingItems = ref<UangMuka[]>([]);
+const pendingLoading = ref(false);
+
+const loadPendingAll = async () => {
+  pendingLoading.value = true;
+  try {
+    pendingItems.value = await uangMukaApi.getBrowsePendingAll();
+  } catch (e: any) {
+    toast.error(e.response?.data?.message ?? "Gagal memuat data.");
+  } finally {
+    pendingLoading.value = false;
+  }
+};
+
+onMounted(() => {
+  if (isPendingFilter.value) {
+    loadPendingAll();
+  }
+});
 </script>
 
 <template>
@@ -172,8 +199,8 @@ const onCetakSelesai = () => {
     :menu-id="MENU_ID"
     :icon="IconReceipt2"
     :headers="headers"
-    :items="items ?? []"
-    :is-loading="isLoading"
+    :items="(isPendingFilter ? pendingItems : items) ?? []"
+    :is-loading="isPendingFilter ? pendingLoading : isLoading"
     :selected="selected"
     @update:selected="selected = $event"
     item-value="Nomor"
@@ -197,9 +224,27 @@ const onCetakSelesai = () => {
     <template #filter-left>
       <div class="filter-group">
         <span class="filter-lbl">Periode</span>
-        <input v-model="filterState.startDate" type="date" class="date-inp" />
+        <input
+          v-model="filterState.startDate"
+          type="date"
+          class="date-inp"
+          :disabled="isPendingFilter"
+        />
         <span class="filter-sep">s/d</span>
-        <input v-model="filterState.endDate" type="date" class="date-inp" />
+        <input
+          v-model="filterState.endDate"
+          type="date"
+          class="date-inp"
+          :disabled="isPendingFilter"
+        />
+        <span
+          v-if="isPendingFilter"
+          class="pending-badge"
+          title="Klik untuk tampilkan semua"
+          @click="router.replace({ path: '/transaksi/uang-muka' })"
+        >
+          ⚠ Belum Selesai (Semua) · ✕ Reset
+        </span>
       </div>
     </template>
 
@@ -310,5 +355,21 @@ const onCetakSelesai = () => {
 }
 .date-inp:focus {
   border-color: #2e7d32;
+}
+.pending-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #c62828;
+  background: #ffebee;
+  border: 1px solid #ef9a9a;
+  border-radius: 20px;
+  padding: 2px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  margin-left: 8px;
+  transition: background 0.15s;
+}
+.pending-badge:hover {
+  background: #ffcdd2;
 }
 </style>

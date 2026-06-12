@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useToast } from "vue-toastification";
 import { isAuthExpiredError } from "@/api/axios";
 import { useAuthStore } from "@/stores/authStore";
@@ -23,10 +23,47 @@ import {
   IconCheck,
 } from "@tabler/icons-vue";
 
+const route = useRoute();
 const router = useRouter();
 const toast = useToast();
 const authStore = useAuthStore();
 const MENU_ID = "28";
+
+const isPendingFilter = computed(() => route.query.filter === "pending");
+const pendingItems = ref<PengajuanTransferRow[]>([]);
+const pendingDetailItems = ref<PengajuanTransferDetailRow[]>([]);
+const pendingLoading = ref(false);
+
+const loadPendingAll = async () => {
+  pendingLoading.value = true;
+  selected.value = [];
+  expanded.value = [];
+  try {
+    const [master, detail] = await Promise.all([
+      pengajuanTransferApi.getBrowsePendingAll(),
+      pengajuanTransferApi.getBrowseDetailPendingAll(),
+    ]);
+    pendingItems.value = master;
+    pendingDetailItems.value = detail;
+  } catch (e: any) {
+    if (isAuthExpiredError(e)) return;
+    toast.error(e.response?.data?.message ?? "Gagal memuat data.");
+  } finally {
+    pendingLoading.value = false;
+  }
+};
+
+const itemsDisplayed = computed(() =>
+  isPendingFilter.value ? pendingItems.value : items.value,
+);
+const isLoadingDisplayed = computed(() =>
+  isPendingFilter.value ? pendingLoading.value : isLoading.value,
+);
+
+const resetPendingFilter = () => {
+  router.replace({ path: "/transaksi/pengajuan-transfer" });
+  loadData();
+};
 
 // ── Periode ───────────────────────────────────────────────────────────
 const STORAGE_KEY = "finance_periode_pengajuan_transfer";
@@ -110,10 +147,18 @@ const loadData = async () => {
   }
 };
 
-onMounted(loadData);
+onMounted(() => {
+  if (isPendingFilter.value) {
+    loadPendingAll();
+  } else {
+    loadData();
+  }
+});
 
 const getDetail = (nomor: string) =>
-  detailItems.value.filter((d) => d.Nomor === nomor);
+  (isPendingFilter.value ? pendingDetailItems.value : detailItems.value).filter(
+    (d) => d.Nomor === nomor,
+  );
 
 // ── Validasi ──────────────────────────────────────────────────────────
 const requireSelected = (): boolean => {
@@ -238,8 +283,8 @@ const fmtDate = (v: string) => {
     :icon="IconTransfer"
     :menu-id="MENU_ID"
     :headers="headers"
-    :items="items"
-    :is-loading="isLoading"
+    :items="itemsDisplayed"
+    :is-loading="isLoadingDisplayed"
     :fixed-layout="false"
     :show-expand="true"
     :expanded="expanded"
@@ -253,9 +298,27 @@ const fmtDate = (v: string) => {
     <template #filter-left>
       <div class="filter-group">
         <span class="filter-lbl">Periode</span>
-        <input v-model="startDate" type="date" class="date-inp" />
+        <input
+          v-model="startDate"
+          type="date"
+          class="date-inp"
+          :disabled="isPendingFilter"
+        />
         <span class="filter-sep">s/d</span>
-        <input v-model="endDate" type="date" class="date-inp" />
+        <input
+          v-model="endDate"
+          type="date"
+          class="date-inp"
+          :disabled="isPendingFilter"
+        />
+        <span
+          v-if="isPendingFilter"
+          class="pending-badge"
+          title="Klik untuk tampilkan semua"
+          @click="resetPendingFilter"
+        >
+          ⚠ Belum/Proses (Semua) · ✕ Reset
+        </span>
       </div>
     </template>
 
@@ -609,5 +672,21 @@ const fmtDate = (v: string) => {
   font-weight: 600;
   color: #e65100;
   margin-bottom: 10px;
+}
+.pending-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #cc0000;
+  background: #ffebee;
+  border: 1px solid #ef9a9a;
+  border-radius: 20px;
+  padding: 2px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  margin-left: 8px;
+  transition: background 0.15s;
+}
+.pending-badge:hover {
+  background: #ffcdd2;
 }
 </style>

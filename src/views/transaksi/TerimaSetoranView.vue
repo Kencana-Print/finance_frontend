@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useToast } from "vue-toastification";
 import { isAuthExpiredError } from "@/api/axios";
 import BaseBrowse from "@/components/BaseBrowse.vue";
@@ -16,6 +16,7 @@ import {
 } from "@/utils/exportExcel";
 import { IconFileSpreadsheet, IconReceipt } from "@tabler/icons-vue";
 
+const route = useRoute();
 const router = useRouter();
 const toast = useToast();
 const MENU_ID = "29";
@@ -49,6 +50,7 @@ const cabangList = ref<CabangItem[]>([]);
 const selectedCabang = ref<string>(savedP?.cabang ?? "");
 
 watch([startDate, endDate, selectedCabang], ([s, e, c]) => {
+  if (isInitializing.value) return;
   try {
     sessionStorage.setItem(
       STORAGE_KEY,
@@ -98,11 +100,21 @@ const headers = [
   },
 ];
 
+const isPendingFilter = computed(() => route.query.filter === "pending");
+
+// Items yang ditampilkan — filter pending jika dari dashboard
+const itemsDisplayed = computed(() =>
+  isPendingFilter.value ? items.value.filter((r) => !r.Verified) : items.value,
+);
+
+const isInitializing = ref(true);
+
 // ── Init: load cabang dulu, lalu data ─────────────────────────────────
 onMounted(async () => {
+  isInitializing.value = true;
+
   try {
     cabangList.value = await terimaSetoranApi.getCabang();
-    // Jika belum ada saved cabang, default ke index 0
     if (!selectedCabang.value && cabangList.value.length > 0) {
       selectedCabang.value = cabangList.value[0].kode;
     }
@@ -110,11 +122,36 @@ onMounted(async () => {
     if (isAuthExpiredError(e)) return;
     toast.error("Gagal memuat daftar cabang.");
   }
+
+  isInitializing.value = false;
   await loadData();
 });
 
 // ── Load ──────────────────────────────────────────────────────────────
 const loadData = async () => {
+  // Mode pending all — bypass filter cabang & tanggal
+  if (isPendingFilter.value) {
+    isLoading.value = true;
+    selected.value = [];
+    expanded.value = [];
+    try {
+      const [master, detail] = await Promise.all([
+        terimaSetoranApi.getBrowsePendingAll(),
+        // detail tidak perlu di mode pending, atau bisa kosongkan
+        Promise.resolve([] as TerimaSetoranDetailRow[]),
+      ]);
+      items.value = master;
+      detailItems.value = detail;
+    } catch (e: any) {
+      if (isAuthExpiredError(e)) return;
+      toast.error(e.response?.data?.message ?? "Gagal memuat data.");
+    } finally {
+      isLoading.value = false;
+    }
+    return;
+  }
+
+  // Mode normal
   if (!selectedCabang.value) return;
   isLoading.value = true;
   selected.value = [];
@@ -204,7 +241,7 @@ const fmtDate = (v: string) => {
     :icon="IconReceipt"
     :menu-id="MENU_ID"
     :headers="headers"
-    :items="items"
+    :items="itemsDisplayed"
     :is-loading="isLoading"
     :fixed-layout="false"
     :show-expand="true"
@@ -237,7 +274,48 @@ const fmtDate = (v: string) => {
       <div class="legend-wrap">
         <span class="legend-dot" style="background: #cc0000"></span>
         <span class="legend-lbl">Belum di Verifikasi</span>
+        <span
+          v-if="isPendingFilter"
+          class="pending-badge"
+          title="Klik untuk tampilkan semua"
+          @click="
+            () => {
+              const today = new Date();
+              const firstDayOfMonth = new Date(
+                today.getFullYear(),
+                today.getMonth(),
+                1,
+              );
+              startDate = getLocal(firstDayOfMonth);
+              endDate = getLocal(today);
+              router.replace({ path: '/transaksi/terima-setoran' });
+            }
+          "
+        >
+          ⚠ Menampilkan yang belum verifikasi · ✕ Reset
+        </span>
       </div>
+    </template>
+
+    <template #summary-row>
+      <span class="summary-lbl">Total</span>
+      <span class="summary-val">{{ itemsDisplayed.length }} data</span>
+      <template v-if="isPendingFilter">
+        <span class="summary-lbl" style="margin-left: 20px; color: #ffcdd2">
+          Belum Verifikasi
+        </span>
+        <span class="summary-val" style="color: #ffcdd2">
+          {{ itemsDisplayed.length }} dari {{ items.length }}
+        </span>
+      </template>
+      <template v-else>
+        <span class="summary-lbl" style="margin-left: 20px"
+          >Belum Verifikasi</span
+        >
+        <span class="summary-val">
+          {{ items.filter((r) => !r.Verified).length }}
+        </span>
+      </template>
     </template>
 
     <!-- ── Tombol aksi ── -->
@@ -440,5 +518,22 @@ const fmtDate = (v: string) => {
 .tr {
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+.pending-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #cc0000;
+  background: #ffebee;
+  border: 1px solid #ef9a9a;
+  border-radius: 20px;
+  padding: 2px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  margin-left: 8px;
+  transition: background 0.15s;
+}
+.pending-badge:hover {
+  background: #ffcdd2;
 }
 </style>

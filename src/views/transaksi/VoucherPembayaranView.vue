@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useToast } from "vue-toastification";
 import { isAuthExpiredError } from "@/api/axios";
 import BaseBrowse from "@/components/BaseBrowse.vue";
@@ -19,9 +19,46 @@ import {
   IconFileSpreadsheet,
 } from "@tabler/icons-vue";
 
+const route = useRoute();
 const router = useRouter();
 const toast = useToast();
 const MENU_ID = "30";
+
+const isPendingFilter = computed(() => route.query.filter === "pending");
+const pendingItems = ref<VoucherRow[]>([]);
+const pendingDetailItems = ref<VoucherDetailRow[]>([]);
+const pendingLoading = ref(false);
+
+const loadPendingAll = async () => {
+  pendingLoading.value = true;
+  selected.value = [];
+  expanded.value = [];
+  try {
+    const [master, detail] = await Promise.all([
+      voucherPembayaranApi.getBrowsePendingAll(),
+      voucherPembayaranApi.getBrowseDetailPendingAll(),
+    ]);
+    pendingItems.value = master;
+    pendingDetailItems.value = detail;
+  } catch (e: any) {
+    if (isAuthExpiredError(e)) return;
+    toast.error(e.response?.data?.message ?? "Gagal memuat data.");
+  } finally {
+    pendingLoading.value = false;
+  }
+};
+
+const itemsDisplayed = computed(() =>
+  isPendingFilter.value ? pendingItems.value : items.value,
+);
+const isLoadingDisplayed = computed(() =>
+  isPendingFilter.value ? pendingLoading.value : isLoading.value,
+);
+
+const resetPendingFilter = () => {
+  router.replace({ path: "/transaksi/voucher-pembayaran" });
+  loadData();
+};
 
 // ── Periode ───────────────────────────────────────────────────────────
 const STORAGE_KEY = "finance_periode_voucher_pembayaran";
@@ -127,10 +164,18 @@ const loadData = async () => {
   }
 };
 
-onMounted(loadData);
+onMounted(() => {
+  if (isPendingFilter.value) {
+    loadPendingAll();
+  } else {
+    loadData();
+  }
+});
 
 const getDetail = (nomor: string) =>
-  detailItems.value.filter((d) => d.Nomor === nomor);
+  (isPendingFilter.value ? pendingDetailItems.value : detailItems.value).filter(
+    (d) => d.Nomor === nomor,
+  );
 
 // ── Row props — warna berdasarkan Ngedit (Delphi CustomDrawCell) ──────
 // WAIT → biru, ACC → hijau, TOLAK → merah (hanya kolom Nomor di Delphi,
@@ -276,13 +321,13 @@ const confirmPengajuan = async () => {
 
 // ── Summary footer ────────────────────────────────────────────────────
 const totalTotal = computed(() =>
-  items.value.reduce((s, r) => s + Number(r.Total), 0),
+  itemsDisplayed.value.reduce((s, r) => s + Number(r.Total), 0),
 );
 const totalBahan = computed(() =>
-  items.value.reduce((s, r) => s + Number(r.BahanTambahan), 0),
+  itemsDisplayed.value.reduce((s, r) => s + Number(r.BahanTambahan), 0),
 );
 const totalNet = computed(() =>
-  items.value.reduce((s, r) => s + Number(r.Net), 0),
+  itemsDisplayed.value.reduce((s, r) => s + Number(r.Net), 0),
 );
 </script>
 
@@ -292,8 +337,8 @@ const totalNet = computed(() =>
     :icon="IconFileInvoice"
     :menu-id="MENU_ID"
     :headers="headers"
-    :items="items"
-    :is-loading="isLoading"
+    :items="itemsDisplayed"
+    :is-loading="isLoadingDisplayed"
     :fixed-layout="false"
     :show-expand="true"
     :expanded="expanded"
@@ -301,15 +346,33 @@ const totalNet = computed(() =>
     item-value="Nomor"
     v-model:selected="selected"
     :row-props-fn="rowPropsFn"
-    @refresh="loadData"
+    @refresh="isPendingFilter ? loadPendingAll() : loadData()"
   >
     <!-- ── Filter ── -->
     <template #filter-left>
       <div class="filter-group">
         <span class="filter-lbl">Periode</span>
-        <input v-model="startDate" type="date" class="date-inp" />
+        <input
+          v-model="startDate"
+          type="date"
+          class="date-inp"
+          :disabled="isPendingFilter"
+        />
         <span class="filter-sep">s/d</span>
-        <input v-model="endDate" type="date" class="date-inp" />
+        <input
+          v-model="endDate"
+          type="date"
+          class="date-inp"
+          :disabled="isPendingFilter"
+        />
+        <span
+          v-if="isPendingFilter"
+          class="pending-badge"
+          title="Klik untuk tampilkan semua"
+          @click="resetPendingFilter"
+        >
+          ⚠ Belum PT (Semua) · ✕ Reset
+        </span>
       </div>
     </template>
 
@@ -657,5 +720,21 @@ const totalNet = computed(() =>
 }
 .alasan-inp:focus {
   border-color: #f57c00;
+}
+.pending-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #e65100;
+  background: #fff3e0;
+  border: 1px solid #ffcc80;
+  border-radius: 20px;
+  padding: 2px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  margin-left: 8px;
+  transition: background 0.15s;
+}
+.pending-badge:hover {
+  background: #ffe0b2;
 }
 </style>

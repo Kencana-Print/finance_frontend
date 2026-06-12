@@ -28,6 +28,10 @@ export const uangMukaApi = {
     });
     return data.data;
   },
+  getBrowsePendingAll: async () => {
+    const { data } = await api.get("/transaksi/uang-muka/pending-all");
+    return data.data as UangMuka[];
+  },
   delete: async (nomor: string) => {
     const { data } = await api.delete(
       `/transaksi/uang-muka/${encodeURIComponent(nomor)}`,
