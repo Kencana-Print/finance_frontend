@@ -166,6 +166,10 @@ const totalApproval = computed(() =>
   form.value.detail.reduce((s, d) => s + (d.approved ? d.total : 0), 0),
 );
 
+watch(totalApproval, (val) => {
+  form.value.nominal = val;
+});
+
 const hitungTotal = (d: UangMukaFormDetail) => {
   d.total = d.qty * d.nilai;
 };
@@ -666,7 +670,7 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
                 <th style="width: 30px">No</th>
                 <th style="min-width: 140px">Nama</th>
                 <th style="min-width: 100px">Spesifikasi</th>
-                <th style="width: 55px">Qty</th>
+                <th style="width: 70px">Qty</th>
                 <th style="width: 55px">Satuan</th>
                 <th style="width: 120px">Nilai Approval</th>
                 <th style="width: 110px">Total</th>
