@@ -294,6 +294,12 @@ const menus = [
         route: "/laporan/stok-finance",
         menuId: null,
       },
+      {
+        title: "Daftar Hutang",
+        icon: IconList,
+        route: "/laporan/daftar-hutang",
+        menuId: null,
+      },
     ],
   },
   {

@@ -20,6 +20,7 @@ import {
   IconList,
   IconChevronRight,
   IconTrendingUp,
+  IconFileInvoice,
 } from "@tabler/icons-vue";
 import PageLayout from "@/components/PageLayout.vue";
 
@@ -63,6 +64,7 @@ const summaryData = ref<DashboardSummary>({
   rekon: { selisihCount: 0 },
   stok: { negativeCount: 0 },
   voucherPt: { count: 0, total: 0 },
+  hutang: { count: 0, total: 0 },
 });
 const isSummaryLoading = ref(true);
 
@@ -396,6 +398,34 @@ const chartBars = computed(() => {
           <div class="task-sub">
             <span v-if="!isSummaryLoading">
               Rp {{ fmtCompact(summaryData.voucherPt?.total ?? 0) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Daftar Hutang Belum Terbayar -->
+        <div
+          v-if="canViewVoucher"
+          class="task-card"
+          :class="summaryData.hutang?.count > 0 ? 'task-red' : 'task-green'"
+          @click="router.push('/laporan/daftar-hutang')"
+        >
+          <div class="task-top">
+            <div
+              class="task-icon-wrap"
+              :class="summaryData.hutang?.count > 0 ? 'red' : 'green'"
+            >
+              <IconFileInvoice :size="20" />
+            </div>
+            <IconChevronRight :size="14" class="task-arrow" />
+          </div>
+          <div class="task-count">
+            <span v-if="isSummaryLoading">—</span>
+            <span v-else>{{ summaryData.hutang?.count ?? 0 }}</span>
+          </div>
+          <div class="task-label">Hutang Belum Lunas</div>
+          <div class="task-sub">
+            <span v-if="!isSummaryLoading">
+              Rp {{ fmtCompact(summaryData.hutang?.total ?? 0) }}
             </span>
           </div>
         </div>

@@ -10,6 +10,7 @@ export interface DashboardSummary {
   rekon: { selisihCount: number };
   stok: { negativeCount: number };
   voucherPt: { count: number; total: number };
+  hutang: { count: number; total: number };
 }
 
 export const dashboardApi = {

@@ -4,6 +4,10 @@ import type {
   MutasiOutRow,
   MutasiOutDetail,
 } from "@/api/transaksi/mutasiOutApi";
+import type {
+  DaftarHutangRow,
+  DaftarHutangDetail,
+} from "@/api/laporan/daftarHutangApi";
 
 // --- Master Data Export ---
 export const exportCostCenter = async (
@@ -4333,5 +4337,270 @@ export const exportMutasiOut = async (
   saveAs(
     new Blob([buf]),
     `Laporan_Detail_Mutasi_Out_${tglStr.replace(/\//g, "-")}.xlsx`,
+  );
+};
+
+export const exportDaftarHutang = async (
+  items: DaftarHutangRow[],
+  startDate: string,
+  endDate: string,
+) => {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Daftar Hutang");
+
+  const borderAll: Partial<ExcelJS.Borders> = {
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" },
+  };
+  const headerFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF2E7D32" },
+  };
+  const headerFont: Partial<ExcelJS.Font> = {
+    bold: true,
+    color: { argb: "FFFFFFFF" },
+    size: 10,
+  };
+  const totalFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFE8F5E9" },
+  };
+
+  const setH = (cell: ExcelJS.Cell, val: string) => {
+    cell.value = val;
+    cell.font = headerFont;
+    cell.fill = headerFill;
+    cell.border = borderAll;
+    cell.alignment = {
+      vertical: "middle",
+      horizontal: "center",
+      wrapText: true,
+    };
+  };
+  const setC = (
+    cell: ExcelJS.Cell,
+    val: any,
+    align: "left" | "center" | "right" = "left",
+    bold = false,
+  ) => {
+    cell.value = val;
+    cell.border = borderAll;
+    cell.font = { size: 10, bold };
+    cell.alignment = { vertical: "middle", horizontal: align };
+  };
+  const setN = (cell: ExcelJS.Cell, val: number, bold = false) => {
+    cell.value = Number(val) || 0;
+    cell.border = borderAll;
+    cell.font = { size: 10, bold };
+    cell.numFmt = "#,##0";
+    cell.alignment = { vertical: "middle", horizontal: "right" };
+  };
+
+  ws.mergeCells("A1:H1");
+  ws.getCell("A1").value = "Daftar Hutang";
+  ws.getCell("A1").font = { bold: true, size: 12 };
+  ws.mergeCells("A2:H2");
+  ws.getCell("A2").value = `Periode : ${startDate} s/d ${endDate}`;
+  ws.getCell("A2").font = { size: 10 };
+  ws.addRow([]);
+
+  const cols = [
+    "Nomor",
+    "Tanggal",
+    "Jatuh Tempo",
+    "Kode Sup",
+    "Nama Supplier",
+    "Total",
+    "Voucher",
+    "Bayar",
+  ];
+  const hRow = ws.addRow(cols);
+  hRow.eachCell((cell, i) => setH(cell, cols[i - 1]));
+  hRow.height = 20;
+
+  let totTotal = 0,
+    totVoucher = 0,
+    totBayar = 0;
+  for (const r of items) {
+    const row = ws.addRow([]);
+    setC(row.getCell(1), r.Nomor);
+    setC(row.getCell(2), r.Tanggal, "center");
+    setC(row.getCell(3), r.JatuhTempo, "center");
+    setC(row.getCell(4), r.SupKode, "center");
+    setC(row.getCell(5), r.Nama);
+    setN(row.getCell(6), r.Total);
+    setN(row.getCell(7), r.Voucher);
+    setN(row.getCell(8), r.Bayar);
+    totTotal += Number(r.Total || 0);
+    totVoucher += Number(r.Voucher || 0);
+    totBayar += Number(r.Bayar || 0);
+    row.height = 16;
+  }
+
+  const footRow = ws.addRow([]);
+  for (let c = 1; c <= 8; c++) {
+    footRow.getCell(c).border = borderAll;
+    footRow.getCell(c).fill = totalFill;
+  }
+  setC(footRow.getCell(5), "TOTAL", "right", true);
+  setN(footRow.getCell(6), totTotal, true);
+  setN(footRow.getCell(7), totVoucher, true);
+  setN(footRow.getCell(8), totBayar, true);
+  footRow.height = 18;
+
+  ws.getColumn(1).width = 18;
+  ws.getColumn(2).width = 12;
+  ws.getColumn(3).width = 12;
+  ws.getColumn(4).width = 10;
+  ws.getColumn(5).width = 35;
+  ws.getColumn(6).width = 18;
+  ws.getColumn(7).width = 18;
+  ws.getColumn(8).width = 18;
+
+  const buf = await wb.xlsx.writeBuffer();
+  saveAs(new Blob([buf]), `DaftarHutang_${startDate}_sd_${endDate}.xlsx`);
+};
+
+export const exportDaftarHutangDetail = async (
+  items: DaftarHutangRow[],
+  detailItems: DaftarHutangDetail[],
+  startDate: string,
+  endDate: string,
+) => {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Daftar Hutang Detail");
+
+  const borderAll: Partial<ExcelJS.Borders> = {
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" },
+  };
+  const headerFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF2E7D32" },
+  };
+  const headerFont: Partial<ExcelJS.Font> = {
+    bold: true,
+    color: { argb: "FFFFFFFF" },
+    size: 10,
+  };
+  const subHeaderFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF1B5E20" },
+  };
+
+  const setH = (cell: ExcelJS.Cell, val: string, fill = headerFill) => {
+    cell.value = val;
+    cell.font = headerFont;
+    cell.fill = fill;
+    cell.border = borderAll;
+    cell.alignment = { vertical: "middle", horizontal: "center" };
+  };
+  const setC = (
+    cell: ExcelJS.Cell,
+    val: any,
+    align: "left" | "center" | "right" = "left",
+    bold = false,
+  ) => {
+    cell.value = val;
+    cell.border = borderAll;
+    cell.font = { size: 10, bold };
+    cell.alignment = { vertical: "middle", horizontal: align };
+  };
+  const setN = (cell: ExcelJS.Cell, val: number, bold = false) => {
+    cell.value = Number(val) || 0;
+    cell.border = borderAll;
+    cell.font = { size: 10, bold };
+    cell.numFmt = "#,##0";
+    cell.alignment = { vertical: "middle", horizontal: "right" };
+  };
+
+  ws.mergeCells("A1:I1");
+  ws.getCell("A1").value = "Detail Daftar Hutang";
+  ws.getCell("A1").font = { bold: true, size: 12 };
+  ws.mergeCells("A2:I2");
+  ws.getCell("A2").value = `Periode : ${startDate} s/d ${endDate}`;
+  ws.getCell("A2").font = { size: 10 };
+  ws.addRow([]);
+
+  // Header 2 baris: master + detail
+  const row4 = ws.getRow(4);
+  setH(row4.getCell(1), "Nomor BPB");
+  setH(row4.getCell(2), "Tanggal");
+  setH(row4.getCell(3), "Jatuh Tempo");
+  setH(row4.getCell(4), "Supplier");
+  setH(row4.getCell(5), "Total BPB");
+  setH(row4.getCell(6), "No. Voucher", subHeaderFill);
+  setH(row4.getCell(7), "Tgl Voucher", subHeaderFill);
+  setH(row4.getCell(8), "Total Voucher", subHeaderFill);
+  setH(row4.getCell(9), "Status Realisasi", subHeaderFill);
+  row4.height = 18;
+
+  let dataRowNum = 5;
+  for (const m of items) {
+    const details = detailItems.filter((d) => d.Nomor === m.Nomor);
+    const rowCount = Math.max(details.length, 1);
+
+    for (let i = 0; i < rowCount; i++) {
+      const row = ws.getRow(dataRowNum + i);
+      if (i === 0) {
+        setC(row.getCell(1), m.Nomor);
+        setC(row.getCell(2), m.Tanggal, "center");
+        setC(row.getCell(3), m.JatuhTempo, "center");
+        setC(row.getCell(4), m.Nama);
+        setN(row.getCell(5), m.Total);
+      } else {
+        for (let c = 1; c <= 5; c++) {
+          row.getCell(c).border = borderAll;
+          row.getCell(c).font = { size: 10 };
+        }
+      }
+
+      if (details[i]) {
+        setC(row.getCell(6), details[i].NomorVoucher);
+        setC(row.getCell(7), details[i].TanggalVoucher, "center");
+        setN(row.getCell(8), details[i].Total);
+        setC(
+          row.getCell(9),
+          details[i].StatusRealisasi == 1 ? "Sudah" : "Belum",
+          "center",
+        );
+        if (details[i].StatusRealisasi == 1) {
+          for (let c = 6; c <= 9; c++) {
+            row.getCell(c).font = { size: 10, color: { argb: "FF1565C0" } };
+          }
+        }
+      } else {
+        for (let c = 6; c <= 9; c++) {
+          row.getCell(c).border = borderAll;
+          row.getCell(c).font = { size: 10 };
+        }
+      }
+      row.height = 16;
+    }
+    dataRowNum += rowCount;
+  }
+
+  ws.getColumn(1).width = 18;
+  ws.getColumn(2).width = 12;
+  ws.getColumn(3).width = 12;
+  ws.getColumn(4).width = 32;
+  ws.getColumn(5).width = 18;
+  ws.getColumn(6).width = 18;
+  ws.getColumn(7).width = 12;
+  ws.getColumn(8).width = 18;
+  ws.getColumn(9).width = 16;
+
+  const buf = await wb.xlsx.writeBuffer();
+  saveAs(
+    new Blob([buf]),
+    `DaftarHutang_Detail_${startDate}_sd_${endDate}.xlsx`,
   );
 };

@@ -671,6 +671,16 @@ const router = createRouter({
         title: "Stok Finance",
       },
     },
+    {
+      path: "/laporan/daftar-hutang",
+      name: "LapDaftarHutang",
+      component: () => import("@/views/laporan/DaftarHutangView.vue"),
+      meta: {
+        layout: "DefaultLayout",
+        requiresAuth: true,
+        title: "Daftar Hutang",
+      },
+    },
 
     // ── Tools ─────────────────────────────────────────────────────────
     {
