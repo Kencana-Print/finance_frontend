@@ -18,23 +18,31 @@ export function useForm<
   T,
   P extends Record<string, any> = Record<string, string>,
 >(options: UseFormOptions<T>) {
-  const route     = useRoute();
-  const params    = route.params as P;
-  const router    = useRouter();
-  const toast     = useToast();
+  const route = useRoute();
+  const params = route.params as P;
+  const router = useRouter();
+  const toast = useToast();
   const authStore = useAuthStore();
 
   const isEditMode = computed(
-    () => !!(route.params.kode || route.params.nomor || route.query.nomor || route.query.kode),
+    () =>
+      !!(
+        route.params.kode ||
+        route.params.nomor ||
+        route.query.nomor ||
+        route.query.kode
+      ),
   );
 
-  const isLoading       = ref(false);
-  const isSaving        = ref(false);
-  const showSaveDialog   = ref(false);
+  const isLoading = ref(false);
+  const isSaving = ref(false);
+  const showSaveDialog = ref(false);
   const showCancelDialog = ref(false);
-  const showCloseDialog  = ref(false);
+  const showCloseDialog = ref(false);
 
-  const formData     = ref<T>({ ...options.initialData }) as ReturnType<typeof ref<T>>;
+  const formData = ref<T>({ ...options.initialData }) as ReturnType<
+    typeof ref<T>
+  >;
   const originalData = ref<T>(JSON.parse(JSON.stringify(options.initialData)));
 
   const canSave = computed(() => {
@@ -44,7 +52,8 @@ export function useForm<
 
   const goBack = () => {
     if (options.onSuccessRoute) return router.push(options.onSuccessRoute);
-    if (route.meta.browseRoute)  return router.push({ name: route.meta.browseRoute as string });
+    if (route.meta.browseRoute)
+      return router.push({ name: route.meta.browseRoute as string });
     window.history.length > 1 ? router.back() : router.push("/");
   };
 
@@ -53,7 +62,7 @@ export function useForm<
     isLoading.value = true;
     try {
       const data = await options.fetchApi();
-      (formData as any).value  = data;
+      (formData as any).value = data;
       originalData.value = JSON.parse(JSON.stringify(data));
     } catch (e) {
       toast.error("Gagal memuat data form.");
@@ -82,7 +91,9 @@ export function useForm<
   const executeCancel = () => {
     showCancelDialog.value = false;
     (formData as any).value = JSON.parse(
-      JSON.stringify(isEditMode.value ? originalData.value : options.initialData)
+      JSON.stringify(
+        isEditMode.value ? originalData.value : options.initialData,
+      ),
     );
   };
 
@@ -98,9 +109,20 @@ export function useForm<
   });
 
   return {
-    isEditMode, isLoading, isSaving,
-    showSaveDialog, showCancelDialog, showCloseDialog,
-    formData, originalData, canSave, params,
-    goBack, fetchData, executeSave, executeCancel, executeClose,
+    isEditMode,
+    isLoading,
+    isSaving,
+    showSaveDialog,
+    showCancelDialog,
+    showCloseDialog,
+    formData,
+    originalData,
+    canSave,
+    params,
+    goBack,
+    fetchData,
+    executeSave,
+    executeCancel,
+    executeClose,
   };
 }

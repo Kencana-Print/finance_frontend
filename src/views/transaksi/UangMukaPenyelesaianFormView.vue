@@ -259,6 +259,34 @@ const showDetailAccountModal = ref(false);
 const activeDetailIdx = ref(-1);
 const detailAccountOptions = ref<any[]>([]);
 
+const onDetailRekKodeEnter = async (idx: number) => {
+  const d = form.value.detail[idx];
+  const kode = d.rekkode.trim();
+  if (!kode) {
+    d.reknama = "";
+    return;
+  }
+  // Delphi: tidak boleh sama dengan account header
+  if (kode === form.value.rek_kode) {
+    toast.warning("Account tidak boleh sama dengan Account header.");
+    d.rekkode = "";
+    d.reknama = "";
+    return;
+  }
+  try {
+    const acc = await uangMukaPenyelesaianApi.getAccountByKode(kode);
+    if (!acc) {
+      toast.warning("Kode account tidak ditemukan.");
+      d.reknama = "";
+      return;
+    }
+    d.rekkode = acc.kode;
+    d.reknama = acc.nama;
+  } catch {
+    toast.error("Gagal mencari account.");
+  }
+};
+
 const openDetAccountModal = (idx: number) => {
   activeDetailIdx.value = idx;
   showDetailAccountModal.value = true; // data sudah ada dari onMounted
@@ -275,6 +303,23 @@ const selectDetailAccount = (acc: any) => {
   d.rekkode = acc.kode;
   d.reknama = acc.nama;
   showDetailAccountModal.value = false;
+};
+
+const onRekKodeEnter = async () => {
+  const kode = form.value.rek_kode.trim();
+  if (!kode) return;
+  try {
+    const acc = await uangMukaPenyelesaianApi.getAccountByKode(kode);
+    if (!acc) {
+      toast.warning("Kode account tidak ditemukan.");
+      form.value.rek_nama = "";
+      return;
+    }
+    form.value.rek_kode = acc.kode;
+    form.value.rek_nama = acc.nama;
+  } catch {
+    toast.error("Gagal mencari account.");
+  }
 };
 
 // ── Search Modal: Cost Center ─────────────────────────────────────────
@@ -358,6 +403,118 @@ const selectSupplier = (sup: any) => {
   d.rekening = sup.rekening;
   d.atasnama = sup.atasnama;
   showSupplierModal.value = false;
+};
+
+// ── Dialog Supplier Baru ───────────────────────────────────────────────
+const showNewSupplierDialog = ref(false);
+const isSavingSupplier = ref(false);
+const newSupplierTargetIdx = ref(-1); // idx baris detail yang akan diisi setelah create
+
+const newSupplierForm = ref({
+  Nama: "",
+  Alamat: "",
+  Kota: "",
+  Telp: "",
+  Hp: "",
+  Fax: "",
+  Contact: "",
+  NpwpKode: "",
+  NpwpNama: "",
+  NpwpAlamat: "",
+  NpwpKota: "",
+  Top: 0,
+  TargetMitra: 0,
+  Keterangan: "",
+  Jenis: {
+    Bahan: false,
+    Cmt: false,
+    Acc: false,
+    Obat: false,
+    Sparepart: false,
+    Atk: false,
+    Jasa: false,
+  },
+  Aktif: "Y", // Y = Aktif, N = Pasif
+  RekeningList: [] as { Bank: string; Rekening: string; AtasNama: string }[],
+});
+
+const resetNewSupplierForm = () => {
+  newSupplierForm.value = {
+    Nama: "",
+    Alamat: "",
+    Kota: "",
+    Telp: "",
+    Hp: "",
+    Fax: "",
+    Contact: "",
+    NpwpKode: "",
+    NpwpNama: "",
+    NpwpAlamat: "",
+    NpwpKota: "",
+    Top: 0,
+    TargetMitra: 0,
+    Keterangan: "",
+    Jenis: {
+      Bahan: false,
+      Cmt: false,
+      Acc: false,
+      Obat: false,
+      Sparepart: false,
+      Atk: false,
+      Jasa: false,
+    },
+    Aktif: "Y",
+    RekeningList: [],
+  };
+};
+
+const openNewSupplierDialog = (idx: number) => {
+  newSupplierTargetIdx.value = idx;
+  resetNewSupplierForm();
+  showNewSupplierDialog.value = true;
+};
+
+const addRekeningRow = () => {
+  newSupplierForm.value.RekeningList.push({
+    Bank: "",
+    Rekening: "",
+    AtasNama: "",
+  });
+};
+const removeRekeningRow = (idx: number) => {
+  newSupplierForm.value.RekeningList.splice(idx, 1);
+};
+
+const saveNewSupplier = async () => {
+  if (!newSupplierForm.value.Nama.trim()) {
+    toast.warning("Nama supplier harus diisi.");
+    return;
+  }
+  isSavingSupplier.value = true;
+  try {
+    const res = await uangMukaPenyelesaianApi.createSupplier(
+      newSupplierForm.value,
+    );
+    const newKode = res.data.kode; // sesuaikan dengan response API
+
+    // Isi otomatis ke baris detail yang aktif (jika ada)
+    if (newSupplierTargetIdx.value >= 0) {
+      const d = form.value.detail[newSupplierTargetIdx.value];
+      d.kdsup = newKode;
+      d.supplier = newSupplierForm.value.Nama;
+      const firstRek = newSupplierForm.value.RekeningList[0];
+      d.bank = firstRek?.Bank || "";
+      d.rekening = firstRek?.Rekening || "";
+      d.atasnama = firstRek?.AtasNama || "";
+    }
+
+    toast.success(`Supplier ${newKode} berhasil dibuat.`);
+    showNewSupplierDialog.value = false;
+  } catch (e: any) {
+    toast.error(e.response?.data?.message ?? "Gagal membuat supplier.");
+  } finally {
+    isSavingSupplier.value = false;
+  }
 };
 
 // ── Tambah baris baru ─────────────────────────────────────────────────
@@ -605,11 +762,11 @@ const rowClass = (d: PenyelesaianDetail) => {
             <label class="field-lbl">Account <span class="req">*</span></label>
             <div class="input-with-btn">
               <input
-                :value="form.rek_kode"
-                readonly
+                v-model="form.rek_kode"
                 class="form-inp mono"
                 style="width: 100px; flex-shrink: 0"
                 placeholder="Kode"
+                @keydown.enter="onRekKodeEnter"
               />
               <input
                 :value="form.rek_nama"
@@ -693,12 +850,21 @@ const rowClass = (d: PenyelesaianDetail) => {
       <div style="height: 100%; display: flex; flex-direction: column">
         <div class="d-flex align-center justify-space-between mb-2">
           <div class="section-title">Detail Penyelesaian</div>
-          <v-btn size="small" color="primary" variant="tonal" @click="addRow">
-            <template #prepend
-              ><IconPlus :size="13" :stroke-width="2"
-            /></template>
-            Tambah Baris
-          </v-btn>
+          <div class="d-flex align-center gap-2">
+            <div class="f-legend">
+              <span class="f-key">F1</span> Pengajuan GA
+              <span class="f-key">F2</span> PO External
+              <span class="f-key">F3</span> Voucher Hutang
+              <span class="f-key">F4</span> Permintaan Garmen
+              <span class="f-key">F5</span> Invoice Garmen
+            </div>
+            <v-btn size="small" color="primary" variant="tonal" @click="addRow">
+              <template #prepend
+                ><IconPlus :size="13" :stroke-width="2"
+              /></template>
+              Tambah Baris
+            </v-btn>
+          </div>
         </div>
 
         <div class="detail-table-wrap">
@@ -713,11 +879,11 @@ const rowClass = (d: PenyelesaianDetail) => {
                 <th style="width: 80px">Qty</th>
                 <th style="width: 120px">Nominal Satuan</th>
                 <th style="width: 110px">Total</th>
+                <th style="width: 45px">Ver</th>
                 <th style="min-width: 130px">Account</th>
                 <th style="min-width: 240px">Nama Account</th>
                 <th style="min-width: 200px">Cost Center</th>
                 <th style="min-width: 200px">Detail CC</th>
-                <th style="width: 45px">Ver</th>
                 <th style="min-width: 80px">Kegunaan</th>
                 <th style="width: 70px">Kd.Sup</th>
                 <th style="min-width: 100px">Supplier</th>
@@ -808,19 +974,25 @@ const rowClass = (d: PenyelesaianDetail) => {
                 <!-- Total -->
                 <td class="tr cell-total">{{ fmt(d.total) }}</td>
 
+                <!-- Verified -->
+                <td class="tc">
+                  <input
+                    type="checkbox"
+                    v-model="d.verified"
+                    @change="onVerifiedChange(d)"
+                  />
+                </td>
+
                 <!-- Account (rekkode) -->
                 <td>
                   <div class="d-flex align-center gap-1" @click.stop>
-                    <span
-                      class="cell-text"
-                      style="
-                        max-width: 60px;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                      "
-                    >
-                      {{ d.rekkode || "-" }}
-                    </span>
+                    <input
+                      v-model="d.rekkode"
+                      class="cell-inp"
+                      style="max-width: 60px"
+                      placeholder="Kode"
+                      @keydown.enter="onDetailRekKodeEnter(idx)"
+                    />
                     <button
                       type="button"
                       class="sup-btn"
@@ -887,15 +1059,6 @@ const rowClass = (d: PenyelesaianDetail) => {
                   </div>
                 </td>
 
-                <!-- Verified -->
-                <td class="tc">
-                  <input
-                    type="checkbox"
-                    v-model="d.verified"
-                    @change="onVerifiedChange(d)"
-                  />
-                </td>
-
                 <!-- Kegunaan -->
                 <td><input v-model="d.guna" class="cell-inp" /></td>
 
@@ -912,9 +1075,18 @@ const rowClass = (d: PenyelesaianDetail) => {
                     <button
                       type="button"
                       class="sup-btn"
+                      title="Cari supplier"
                       @click.stop.prevent="openSupplierModal(idx)"
                     >
                       <IconSearch :size="11" />
+                    </button>
+                    <button
+                      type="button"
+                      class="sup-btn"
+                      title="Supplier baru"
+                      @click.stop.prevent="openNewSupplierDialog(idx)"
+                    >
+                      <IconPlus :size="11" />
                     </button>
                   </div>
                 </td>
@@ -1080,6 +1252,251 @@ const rowClass = (d: PenyelesaianDetail) => {
             <IconPrinter :size="14" :stroke-width="1.8" />
           </template>
           Cetak Penyelesaian
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <!-- ── Dialog: Supplier Baru ── -->
+  <v-dialog v-model="showNewSupplierDialog" max-width="900" scrollable>
+    <v-card rounded="lg">
+      <v-card-title class="ns-header">
+        <span>Tambah Master Supplier</span>
+        <button
+          class="ns-close"
+          type="button"
+          @click="showNewSupplierDialog = false"
+        >
+          ×
+        </button>
+      </v-card-title>
+
+      <v-card-text class="pa-4" style="max-height: 75vh">
+        <!-- Row 1: Kode, Nama, Status -->
+        <div class="ns-row">
+          <div class="ns-field" style="width: 110px">
+            <label class="ns-lbl">Kode</label>
+            <input value="Auto" readonly class="form-inp" placeholder="Auto" />
+          </div>
+          <div class="ns-field" style="flex: 1">
+            <label class="ns-lbl"
+              >Nama Supplier <span class="req">*</span></label
+            >
+            <input v-model="newSupplierForm.Nama" class="form-inp" />
+          </div>
+          <div class="ns-field" style="width: 160px">
+            <label class="ns-lbl">Status</label>
+            <div class="ns-radio-row">
+              <label class="ns-radio">
+                <input type="radio" v-model="newSupplierForm.Aktif" value="Y" />
+                <span>Aktif</span>
+              </label>
+              <label class="ns-radio">
+                <input type="radio" v-model="newSupplierForm.Aktif" value="N" />
+                <span>Pasif</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 2: Jenis Supplier -->
+        <div class="ns-field ns-full">
+          <label class="ns-lbl"
+            >Jenis Supplier <span class="req">*</span></label
+          >
+          <div class="ns-jenis-row">
+            <label class="ns-jenis-pill">
+              <input type="checkbox" v-model="newSupplierForm.Jenis.Bahan" />
+              <span>Bahan</span>
+            </label>
+            <label class="ns-jenis-pill">
+              <input type="checkbox" v-model="newSupplierForm.Jenis.Cmt" />
+              <span>CMT</span>
+            </label>
+            <label class="ns-jenis-pill">
+              <input type="checkbox" v-model="newSupplierForm.Jenis.Acc" />
+              <span>Accesories</span>
+            </label>
+            <label class="ns-jenis-pill">
+              <input type="checkbox" v-model="newSupplierForm.Jenis.Obat" />
+              <span>Obat</span>
+            </label>
+            <label class="ns-jenis-pill">
+              <input
+                type="checkbox"
+                v-model="newSupplierForm.Jenis.Sparepart"
+              />
+              <span>Sparepart</span>
+            </label>
+            <label class="ns-jenis-pill">
+              <input type="checkbox" v-model="newSupplierForm.Jenis.Atk" />
+              <span>ATK/RTK</span>
+            </label>
+            <label class="ns-jenis-pill">
+              <input type="checkbox" v-model="newSupplierForm.Jenis.Jasa" />
+              <span>Jasa</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Row 3: Alamat, Kota -->
+        <div class="ns-row">
+          <div class="ns-field" style="flex: 2">
+            <label class="ns-lbl">Alamat <span class="req">*</span></label>
+            <input v-model="newSupplierForm.Alamat" class="form-inp" />
+          </div>
+          <div class="ns-field" style="flex: 1">
+            <label class="ns-lbl">Kota <span class="req">*</span></label>
+            <input v-model="newSupplierForm.Kota" class="form-inp" />
+          </div>
+        </div>
+
+        <!-- Row 4: Contact, HP, Telp, Fax -->
+        <div class="ns-row">
+          <div class="ns-field" style="flex: 1">
+            <label class="ns-lbl"
+              >Contact Person <span class="req">*</span></label
+            >
+            <input v-model="newSupplierForm.Contact" class="form-inp" />
+          </div>
+          <div class="ns-field" style="flex: 1">
+            <label class="ns-lbl">No HP <span class="req">*</span></label>
+            <input v-model="newSupplierForm.Hp" class="form-inp" />
+          </div>
+          <div class="ns-field" style="flex: 1">
+            <label class="ns-lbl">No Telp Kantor</label>
+            <input v-model="newSupplierForm.Telp" class="form-inp" />
+          </div>
+          <div class="ns-field" style="flex: 1">
+            <label class="ns-lbl">No Fax</label>
+            <input v-model="newSupplierForm.Fax" class="form-inp" />
+          </div>
+        </div>
+
+        <!-- Row 5: Keterangan, TOP, Target Mitra + NPWP box -->
+        <div class="ns-row">
+          <div
+            class="ns-field"
+            style="flex: 1.4; display: flex; flex-direction: column; gap: 8px"
+          >
+            <div class="ns-field">
+              <label class="ns-lbl">Keterangan</label>
+              <input v-model="newSupplierForm.Keterangan" class="form-inp" />
+            </div>
+            <div class="ns-row">
+              <div class="ns-field" style="flex: 1">
+                <label class="ns-lbl">T.O.P (Hari)</label>
+                <input
+                  v-model.number="newSupplierForm.Top"
+                  type="number"
+                  class="form-inp"
+                />
+              </div>
+              <div class="ns-field" style="flex: 1">
+                <label class="ns-lbl">Target Mitra</label>
+                <input
+                  v-model.number="newSupplierForm.TargetMitra"
+                  type="number"
+                  class="form-inp"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- NPWP box -->
+          <div class="ns-npwp-box">
+            <div class="ns-npwp-title">Data NPWP</div>
+            <div class="ns-row" style="margin-bottom: 6px">
+              <input
+                v-model="newSupplierForm.NpwpKode"
+                class="form-inp"
+                placeholder="No. NPWP"
+              />
+            </div>
+            <div class="ns-row" style="margin-bottom: 6px">
+              <input
+                v-model="newSupplierForm.NpwpNama"
+                class="form-inp"
+                placeholder="Nama NPWP"
+              />
+            </div>
+            <div class="ns-row">
+              <input
+                v-model="newSupplierForm.NpwpAlamat"
+                class="form-inp"
+                placeholder="Alamat NPWP"
+                style="flex: 2"
+              />
+              <input
+                v-model="newSupplierForm.NpwpKota"
+                class="form-inp"
+                placeholder="Kota NPWP"
+                style="flex: 1"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Rekening -->
+        <div class="ns-rek-section">
+          <div class="d-flex align-center justify-space-between mb-2">
+            <span class="ns-lbl" style="margin: 0">📋 Data Rekening</span>
+            <v-btn
+              size="x-small"
+              variant="flat"
+              color="success"
+              @click="addRekeningRow"
+            >
+              <template #prepend><IconPlus :size="12" /></template>
+              Tambah Rekening
+            </v-btn>
+          </div>
+          <table class="ns-rek-tbl">
+            <thead>
+              <tr>
+                <th style="width: 40px">No</th>
+                <th>Nama Bank</th>
+                <th>No. Rekening</th>
+                <th>Atas Nama</th>
+                <th style="width: 50px">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(r, idx) in newSupplierForm.RekeningList" :key="idx">
+                <td class="tc">{{ idx + 1 }}</td>
+                <td><input v-model="r.Bank" class="cell-inp" /></td>
+                <td><input v-model="r.Rekening" class="cell-inp" /></td>
+                <td><input v-model="r.AtasNama" class="cell-inp" /></td>
+                <td class="tc">
+                  <button
+                    class="del-btn"
+                    type="button"
+                    @click.prevent="removeRekeningRow(idx)"
+                  >
+                    <IconTrash :size="12" :stroke-width="1.8" />
+                  </button>
+                </td>
+              </tr>
+              <tr v-if="!newSupplierForm.RekeningList.length">
+                <td colspan="5" class="empty-td">Belum ada rekening</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </v-card-text>
+
+      <v-card-actions class="pa-3" style="border-top: 1px solid #e0e0e0">
+        <v-spacer />
+        <v-btn variant="outlined" @click="showNewSupplierDialog = false"
+          >Batal</v-btn
+        >
+        <v-btn
+          color="success"
+          variant="flat"
+          :loading="isSavingSupplier"
+          @click="saveNewSupplier"
+        >
+          Simpan
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -1268,6 +1685,25 @@ const rowClass = (d: PenyelesaianDetail) => {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
+}
+
+.f-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: #6b7280;
+  flex-wrap: wrap;
+}
+.f-key {
+  background: #e5e7eb;
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  font-family: monospace;
+  color: #374151;
 }
 
 /* ── Field rows ── */
@@ -1530,5 +1966,114 @@ const rowClass = (d: PenyelesaianDetail) => {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-bottom: 8px;
+}
+
+.ns-header {
+  background: #2e7d32;
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ns-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+}
+.ns-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.ns-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ns-full {
+  margin-bottom: 10px;
+}
+.ns-lbl {
+  font-size: 11px;
+  font-weight: 600;
+  color: #374151;
+}
+.ns-radio-row {
+  display: flex;
+  gap: 14px;
+  height: 30px;
+  align-items: center;
+}
+.ns-radio {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.ns-radio input {
+  accent-color: #2e7d32;
+}
+.ns-jenis-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+.ns-jenis-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #374151;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ns-jenis-pill input {
+  accent-color: #2e7d32;
+}
+.ns-npwp-box {
+  flex: 1;
+  background: #f0fdf4;
+  border: 1px solid #c8e6c9;
+  border-radius: 6px;
+  padding: 10px;
+}
+.ns-npwp-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #2e7d32;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+.ns-rek-section {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 10px;
+  margin-top: 4px;
+}
+.ns-rek-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.ns-rek-tbl th {
+  background: #2e7d32;
+  color: white;
+  font-weight: 700;
+  padding: 5px 6px;
+  text-align: left;
+}
+.ns-rek-tbl td {
+  padding: 3px 4px;
+  border-bottom: 1px solid #f0f0f0;
 }
 </style>

@@ -260,6 +260,24 @@ const onNilaiFocus = (d: UangMukaFormDetail, e: Event) => {
   (e.target as HTMLInputElement).value = d.nilai ? String(d.nilai) : "";
 };
 
+const onQtyInput = (d: UangMukaFormDetail, e: Event) => {
+  const raw = parseNum((e.target as HTMLInputElement).value);
+  d.qty = raw;
+  hitungTotal(d);
+};
+
+const onQtyBlur = (d: UangMukaFormDetail, e: Event) => {
+  (e.target as HTMLInputElement).value = formatNum(d.qty);
+};
+
+const onQtyFocus = (d: UangMukaFormDetail, e: Event) => {
+  const input = e.target as HTMLInputElement;
+  input.value = d.qty ? String(d.qty) : "";
+  requestAnimationFrame(() => {
+    input.setSelectionRange(input.value.length, input.value.length);
+  });
+};
+
 const onNominalInput = (e: Event) => {
   form.value.nominal = parseNum((e.target as HTMLInputElement).value);
 };
@@ -670,7 +688,7 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
                 <th style="width: 30px">No</th>
                 <th style="min-width: 140px">Nama</th>
                 <th style="min-width: 100px">Spesifikasi</th>
-                <th style="width: 70px">Qty</th>
+                <th style="width: 80px">Qty</th>
                 <th style="width: 55px">Satuan</th>
                 <th style="width: 120px">Nilai Approval</th>
                 <th style="width: 110px">Total</th>
@@ -714,13 +732,14 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
                 </td>
                 <td>
                   <input
-                    v-if="d.ga === 0"
-                    v-model.number="d.qty"
-                    type="number"
+                    :value="formatNum(d.qty)"
+                    type="text"
+                    inputmode="numeric"
                     class="cell-inp tr"
-                    @input="hitungTotal(d)"
+                    @focus="onQtyFocus(d, $event)"
+                    @input="onQtyInput(d, $event)"
+                    @blur="onQtyBlur(d, $event)"
                   />
-                  <span v-else class="cell-text tr">{{ d.qty }}</span>
                 </td>
                 <td>
                   <input

@@ -77,7 +77,7 @@ const menuGroups = computed(() => {
     const id = menu.id;
     if (id === 1) return "Tools";
     if (id >= 5 && id <= 9) return "Master";
-    if (id >= 21 && id <= 30) return "Transaksi";
+    if (id >= 21 && id <= 31) return "Transaksi";
     if (id >= 51 && id <= 59) return "Posting";
     return "Lainnya";
   };

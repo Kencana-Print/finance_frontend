@@ -1,5 +1,9 @@
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
+import type {
+  MutasiOutRow,
+  MutasiOutDetail,
+} from "@/api/transaksi/mutasiOutApi";
 
 // --- Master Data Export ---
 export const exportCostCenter = async (
@@ -4189,4 +4193,145 @@ export const exportVoucherPembayaranDetail = async (
 
   const buf = await wb.xlsx.writeBuffer();
   saveAs(new Blob([buf]), `DetailVoucher_${startDate}_sd_${endDate}.xlsx`);
+};
+
+export const exportMutasiOut = async (
+  items: MutasiOutRow[],
+  detailCache: Record<string, MutasiOutDetail[]>,
+) => {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Mutasi Out Detail");
+
+  const borderAll: Partial<ExcelJS.Borders> = {
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" },
+  };
+  const headerFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF2E7D32" },
+  };
+  const headerFont: Partial<ExcelJS.Font> = {
+    bold: true,
+    color: { argb: "FFFFFFFF" },
+    size: 10,
+  };
+
+  const setH = (cell: ExcelJS.Cell, val: string) => {
+    cell.value = val;
+    cell.font = headerFont;
+    cell.fill = headerFill;
+    cell.border = borderAll;
+    cell.alignment = {
+      vertical: "middle",
+      horizontal: "center",
+      wrapText: true,
+    };
+  };
+  const setC = (
+    cell: ExcelJS.Cell,
+    val: any,
+    align: "left" | "center" | "right" = "left",
+    bold = false,
+  ) => {
+    cell.value = val;
+    cell.border = borderAll;
+    cell.font = { size: 10, bold };
+    cell.alignment = { vertical: "middle", horizontal: align };
+  };
+  const setN = (cell: ExcelJS.Cell, val: number) => {
+    cell.value = Number(val) || 0;
+    cell.border = borderAll;
+    cell.font = { size: 10 };
+    cell.numFmt = "#,##0.00";
+    cell.alignment = { vertical: "middle", horizontal: "right" };
+  };
+
+  const today = new Date();
+  const tglStr = `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`;
+
+  ws.mergeCells("A1:L1");
+  ws.getCell("A1").value = "Laporan Detail Mutasi Out Garmen";
+  ws.getCell("A1").font = { bold: true, size: 12 };
+  ws.mergeCells("A2:L2");
+  ws.getCell("A2").value = `Tanggal Cetak: ${tglStr}`;
+  ws.getCell("A2").font = { size: 10 };
+  ws.addRow([]);
+
+  const cols = [
+    "Nomor",
+    "Jenis",
+    "Tanggal",
+    "Cabang",
+    "Tujuan",
+    "Keterangan",
+    "No. Permintaan",
+    "Kode Barang",
+    "Nama Barang",
+    "Spesifikasi",
+    "Satuan",
+    "Jumlah",
+  ];
+  const hRow = ws.addRow(cols);
+  hRow.eachCell((cell, i) => setH(cell, cols[i - 1]));
+  hRow.height = 20;
+
+  for (const m of items) {
+    const details = detailCache[m.Nomor] || [];
+
+    if (details.length === 0) {
+      const row = ws.addRow([]);
+      setC(row.getCell(1), m.Nomor, "left", true);
+      setC(row.getCell(2), m.Jenis, "center");
+      setC(row.getCell(3), m.Tanggal, "center");
+      setC(row.getCell(4), m.Cab, "center");
+      setC(row.getCell(5), m.Tujuan, "center");
+      setC(row.getCell(6), m.Keterangan);
+      for (let c = 7; c <= 12; c++) setC(row.getCell(c), "");
+      row.height = 16;
+      continue;
+    }
+
+    details.forEach((d, i) => {
+      const row = ws.addRow([]);
+      if (i === 0) {
+        setC(row.getCell(1), m.Nomor, "left", true);
+        setC(row.getCell(2), m.Jenis, "center");
+        setC(row.getCell(3), m.Tanggal, "center");
+        setC(row.getCell(4), m.Cab, "center");
+        setC(row.getCell(5), m.Tujuan, "center");
+        setC(row.getCell(6), m.Keterangan);
+      } else {
+        for (let c = 1; c <= 6; c++) setC(row.getCell(c), "");
+      }
+      setC(row.getCell(7), d.NoPermintaan);
+      setC(row.getCell(8), d.Kode);
+      setC(row.getCell(9), d.Nama);
+      setC(row.getCell(10), d.Spesifikasi);
+      setC(row.getCell(11), d.Satuan, "center");
+      setN(row.getCell(12), d.Jumlah);
+      row.height = 16;
+    });
+  }
+
+  ws.getColumn(1).width = 18;
+  ws.getColumn(2).width = 12;
+  ws.getColumn(3).width = 12;
+  ws.getColumn(4).width = 8;
+  ws.getColumn(5).width = 8;
+  ws.getColumn(6).width = 22;
+  ws.getColumn(7).width = 16;
+  ws.getColumn(8).width = 12;
+  ws.getColumn(9).width = 30;
+  ws.getColumn(10).width = 25;
+  ws.getColumn(11).width = 8;
+  ws.getColumn(12).width = 12;
+
+  const buf = await wb.xlsx.writeBuffer();
+  saveAs(
+    new Blob([buf]),
+    `Laporan_Detail_Mutasi_Out_${tglStr.replace(/\//g, "-")}.xlsx`,
+  );
 };

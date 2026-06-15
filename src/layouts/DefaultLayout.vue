@@ -26,6 +26,7 @@ import {
   IconMenu2,
   IconArrowsExchange,
   IconTransfer,
+  IconTruckDelivery,
 } from "@tabler/icons-vue";
 
 const router = useRouter();
@@ -176,6 +177,12 @@ const menus = [
         icon: IconReceipt2,
         route: "/transaksi/uang-muka",
         menuId: "21",
+      },
+      {
+        title: "Mutasi Out Garmen",
+        icon: IconTruckDelivery,
+        route: "/transaksi/mutasi-out",
+        menuId: "31",
       },
       {
         title: "Bukti Kas Masuk (BKM)",

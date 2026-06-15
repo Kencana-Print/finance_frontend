@@ -77,6 +77,13 @@ export const uangMukaPenyelesaianApi = {
     return data.data as { kode: string; nama: string; cabang: string }[];
   },
 
+  getAccountByKode: async (kode: string) => {
+    const { data } = await api.get(
+      `/transaksi/uang-muka/selesai/account/${encodeURIComponent(kode)}`,
+    );
+    return data.data;
+  },
+
   getCostCenterOptions: async () => {
     const { data } = await api.get("/transaksi/uang-muka/selesai/cost-center");
     return data.data as { kode: number; nama: string }[];
@@ -153,5 +160,39 @@ export const uangMukaPenyelesaianApi = {
       `/transaksi/uang-muka/selesai/invoice-garmen/detail/${encodeURIComponent(nomor)}`,
     );
     return data.data as PenyelesaianDetail[];
+  },
+
+  createSupplier: async (payload: {
+    Nama: string;
+    Alamat: string;
+    Kota: string;
+    Telp: string;
+    Hp: string;
+    Fax: string;
+    Contact: string;
+    NpwpKode: string;
+    NpwpNama: string;
+    NpwpAlamat: string;
+    NpwpKota: string;
+    Top: number;
+    TargetMitra: number;
+    Keterangan: string;
+    Jenis: {
+      Bahan: boolean;
+      Cmt: boolean;
+      Acc: boolean;
+      Obat: boolean;
+      Sparepart: boolean;
+      Atk: boolean;
+      Jasa: boolean;
+    };
+    Aktif: string;
+    RekeningList: { Bank: string; Rekening: string; AtasNama: string }[];
+  }) => {
+    const { data } = await api.post(
+      "/transaksi/uang-muka/selesai/supplier",
+      payload,
+    );
+    return data;
   },
 };

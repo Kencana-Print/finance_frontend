@@ -136,6 +136,53 @@ const router = createRouter({
         title: "Cetak Penyelesaian",
       },
     },
+    // MUTASI OUT
+    {
+      path: "/transaksi/mutasi-out",
+      name: "MutasiOut",
+      component: () => import("@/views/transaksi/MutasiOutView.vue"),
+      meta: {
+        layout: "DefaultLayout",
+        requiresAuth: true,
+        menuId: "31",
+        title: "Mutasi Out Garmen",
+      },
+    },
+    {
+      path: "/transaksi/mutasi-out/create",
+      name: "MutasiOutCreate",
+      component: () => import("@/views/transaksi/MutasiOutFormView.vue"),
+      meta: {
+        layout: "DefaultLayout",
+        requiresAuth: true,
+        menuId: "31",
+        title: "Buat Mutasi Out",
+        browseRoute: "MutasiOut",
+      },
+    },
+    {
+      path: "/transaksi/mutasi-out/edit/:nomor",
+      name: "MutasiOutEdit",
+      component: () => import("@/views/transaksi/MutasiOutFormView.vue"),
+      meta: {
+        layout: "DefaultLayout",
+        requiresAuth: true,
+        menuId: "31",
+        title: "Ubah Mutasi Out",
+        browseRoute: "MutasiOut",
+      },
+    },
+    {
+      path: "/transaksi/mutasi-out/print/:nomor",
+      name: "MutasiOutPrint",
+      component: () => import("@/views/transaksi/MutasiOutPrintView.vue"),
+      meta: {
+        layout: "BlankLayout",
+        requiresAuth: true,
+        title: "Cetak Mutasi Out",
+      },
+    },
+
     // BKM
     {
       path: "/transaksi/bkm",
