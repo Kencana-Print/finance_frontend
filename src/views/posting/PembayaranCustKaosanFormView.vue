@@ -15,7 +15,6 @@ const router = useRouter();
 const toast = useToast();
 const MENU_ID = "52";
 
-// ── Periode — default awal bulan s.d. kemarin (sesuai Delphi refreshdata) ──
 const getLocal = (d: Date) => {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -43,7 +42,6 @@ const items = ref<DataPostingKaosanRow[]>([]);
 const cabangList = ref<CabangItem[]>([]);
 const selectedCabang = ref("ALL");
 
-// ── Init: load cabang dulu ────────────────────────────────────────────
 onMounted(async () => {
   try {
     cabangList.value = await pembayaranCustKaosanFormApi.getCabang();
@@ -54,12 +52,10 @@ onMounted(async () => {
   await loadData();
 });
 
-// Watch perubahan filter → auto reload
 watch([startDate, endDate, selectedCabang], () => {
   loadData();
 });
 
-// ── Load ──────────────────────────────────────────────────────────────
 const loadData = async () => {
   isLoading.value = true;
   try {
@@ -77,8 +73,10 @@ const loadData = async () => {
 };
 
 // ── Computed ──────────────────────────────────────────────────────────
-// Hanya tampilkan yang belum diposting (Status = '')
-const displayItems = computed(() => items.value.filter((d) => d.Status === ""));
+// Tampilkan yang Kosong (Pending) DAN yang statusnya "Update"
+const displayItems = computed(() =>
+  items.value.filter((d) => d.Status === "" || d.Status === "Update"),
+);
 const pendingItems = computed(() => displayItems.value);
 const totalNominal = computed(() =>
   displayItems.value.reduce((s, d) => s + Number(d.Nominal), 0),
@@ -109,8 +107,7 @@ const doPosting = async () => {
     const res = await pembayaranCustKaosanFormApi.doPosting(items.value);
     toast.success(res.message);
 
-    // Update status baris yang sukses → otomatis hilang dari displayItems
-    const resultMap = new Map(res.data.map((r) => [r.nomor, r]));
+    const resultMap = new Map(res.data.map((r: any) => [r.nomor, r]));
     items.value = items.value.map((d) => {
       const result = resultMap.get(d.Nomor);
       if (result?.status === "Sukses") return { ...d, Status: "Sukses" };
@@ -133,6 +130,7 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
 
 const rowClass = (status: string) => {
   if (status === "Sukses") return "row-sukses";
+  if (status === "Update") return "row-update";
   if (status === "Sudah") return "row-sudah";
   return "";
 };
@@ -154,7 +152,6 @@ const rowClass = (status: string) => {
     @confirm-cancel="loadData"
     @confirm-close="onConfirmClose"
   >
-    <!-- Override tombol header -->
     <template #header-actions>
       <v-btn
         size="small"
@@ -190,7 +187,6 @@ const rowClass = (status: string) => {
     </template>
 
     <div class="pbk-layout">
-      <!-- ── Filter ── -->
       <div class="desktop-form-section header-section pbk-filter">
         <div class="filter-row">
           <span class="filter-lbl">Periode</span>
@@ -214,17 +210,16 @@ const rowClass = (status: string) => {
             Tampilkan
           </v-btn>
           <div class="summary-pill">
-            <span class="pill-lbl">Pending:</span>
+            <span class="pill-lbl">Pending/Update:</span>
             <span class="pill-val">{{ pendingItems.length }} data</span>
           </div>
           <div class="summary-pill">
-            <span class="pill-lbl">Total Pending:</span>
+            <span class="pill-lbl">Total Nominal:</span>
             <span class="pill-val">Rp {{ fmt(totalPending) }}</span>
           </div>
         </div>
       </div>
 
-      <!-- ── Grid ── -->
       <div class="desktop-form-section pbk-grid">
         <div v-if="isLoading" class="grid-loading">
           <v-progress-circular indeterminate color="primary" size="36" />
@@ -270,6 +265,9 @@ const rowClass = (status: string) => {
                   <span v-if="d.Status === 'Sukses'" class="badge-sukses"
                     >Sukses</span
                   >
+                  <span v-else-if="d.Status === 'Update'" class="badge-update"
+                    >Update</span
+                  >
                   <span v-else-if="d.Status === 'Sudah'" class="badge-sudah"
                     >Sudah</span
                   >
@@ -282,8 +280,7 @@ const rowClass = (status: string) => {
                   class="tc"
                   style="color: #9e9e9e; font-style: italic; padding: 20px"
                 >
-                  Tidak ada data pending. Ubah filter atau semua sudah
-                  diposting.
+                  Tidak ada data pending/revisi.
                 </td>
               </tr>
             </tbody>
@@ -298,28 +295,27 @@ const rowClass = (status: string) => {
         </div>
       </div>
 
-      <!-- ── Legend ── -->
       <div class="pbk-legend">
         <span class="badge-sukses">Sukses</span>
-        <span class="legend-lbl">Berhasil diposting sesi ini</span>
+        <span class="legend-lbl">Berhasil diposting</span>
+        <span class="badge-update" style="margin-left: 12px">Update</span>
+        <span class="legend-lbl">Revisi Uraian (Invoice Masuk)</span>
         <span class="badge-sudah" style="margin-left: 12px">Sudah</span>
-        <span class="legend-lbl">Sudah ada di database</span>
+        <span class="legend-lbl">Sudah diposting (Dihide)</span>
         <span class="badge-pending" style="margin-left: 12px">—</span>
         <span class="legend-lbl">Belum diposting</span>
       </div>
     </div>
   </BaseForm>
 
-  <!-- ── Dialog Konfirmasi Posting ── -->
   <v-dialog v-model="showPostingDialog" max-width="420" persistent>
     <v-card rounded="lg">
       <v-card-title class="text-body-1 font-weight-bold pa-4">
         Konfirmasi Posting
       </v-card-title>
       <v-card-text class="pa-4 pt-0" style="font-size: 12px">
-        Akan memposting
-        <strong>{{ pendingItems.length }} data</strong>
-        dengan total nominal
+        Akan memposting <strong>{{ pendingItems.length }} data</strong>
+        (termasuk revisi) dengan total nominal
         <strong>Rp {{ fmt(totalPending) }}</strong
         >. <br /><br />
         Yakin akan di Posting?
@@ -470,6 +466,9 @@ const rowClass = (status: string) => {
   background: #f5f5f5 !important;
   color: #bdbdbd;
 }
+.row-update td {
+  background: #fffde7 !important;
+}
 
 .tfoot-row td {
   background: #f0fdf4;
@@ -501,6 +500,14 @@ const rowClass = (status: string) => {
 .badge-sudah {
   background: #f5f5f5;
   color: #9e9e9e;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+}
+.badge-update {
+  background: #fff8e1;
+  color: #f57c00;
   padding: 1px 8px;
   border-radius: 10px;
   font-size: 10px;
