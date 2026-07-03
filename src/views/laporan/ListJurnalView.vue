@@ -92,7 +92,7 @@ const headers = [
     width: "100px",
     align: "center" as const,
   },
-  { key: "nomor", title: "Nomor", width: "200px" },
+  { key: "Nomor", title: "Nomor", width: "200px" },
   { key: "Referensi", title: "Referensi", width: "200px" },
   { key: "Account", title: "Account", width: "100px" },
   { key: "AccountName", title: "Nama Account", width: "240px" },
@@ -494,6 +494,7 @@ const doExportPivot = async () => {
       DetailCC: r.DetailCC ?? "",
       Referensi: r.Referensi ?? "",
       Tanggal: r.Tanggal ?? "",
+      Nomor: r.Nomor ?? "",
     };
     if (Number(r.Debet))
       plainData.push({ ...base, Jenis: "Debet", Nilai: Number(r.Debet) });
