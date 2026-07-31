@@ -64,7 +64,7 @@ export const mutasiOutFormApi = {
 
   searchPermintaanFinance: async (params: {
     jenis: string;
-    cabangTujuan: string;
+    cabangAsal: string;
     search?: string;
   }) => {
     const { data } = await api.get(

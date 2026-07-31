@@ -190,15 +190,12 @@ const setBarang = (v: BarangGarmenItem) => {
 
 // ── Search Permintaan Finance ─────────────────────────────────────────
 const fetchPermintaan = async (search = "") => {
-  if (!fd.value.CabangTujuan) {
-    toast.warning("Pilih Cabang Tujuan terlebih dahulu.");
-    return;
-  }
+  // Tidak perlu lagi cek CabangTujuan — yang relevan adalah CabangAsal
   isLoadingPermintaan.value = true;
   try {
     permintaanItems.value = await mutasiOutFormApi.searchPermintaanFinance({
       jenis: formJenis.value,
-      cabangTujuan: fd.value.CabangTujuan,
+      cabangAsal: fd.value.CabangAsal,
       search,
     });
   } catch (e: any) {
@@ -271,8 +268,6 @@ const confirmRemoveItem = () => {
 
 // ── Validasi ──────────────────────────────────────────────────────────
 const validateSave = () => {
-  if (!fd.value.CabangTujuan)
-    return toast.warning("Cabang Tujuan harus dipilih.");
   if (!fd.value.Keterangan?.trim())
     return toast.warning("Keterangan harus diisi.");
   if (isEditMode.value && ["WAIT", "TOLAK"].includes(fd.value.StatusEdit))

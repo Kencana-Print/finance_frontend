@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from "vue";
 import { useToast } from "vue-toastification";
 import { isAuthExpiredError } from "@/api/axios";
 import BaseBrowse from "@/components/BaseBrowse.vue";
@@ -149,12 +149,18 @@ const renderPivot = async () => {
   (jq(pivotContainer.value) as any).empty().pivotUI(
     plainData,
     {
-      rows: (savedConfig.rows as string[]) ?? ["AccountName", "Tanggal"],
+      rows: (savedConfig.rows as string[]) ?? ["AccountName"],
       cols: (savedConfig.cols as string[]) ?? ["Tahun", "Bulan", "Jenis"],
       vals: (savedConfig.vals as string[]) ?? ["Nilai"],
       aggregatorName: (savedConfig.aggregatorName as string) ?? "Sum",
       rendererName: (savedConfig.rendererName as string) ?? "Table",
       hiddenAttributes: [],
+      rendererOptions: {
+        Table: {
+          rowTotals: false,
+          colTotals: false,
+        },
+      },
       onRefresh: (config: Record<string, unknown>) => {
         localStorage.setItem(
           "pivot_config_list_jurnal",
@@ -165,6 +171,9 @@ const renderPivot = async () => {
     },
     true,
   );
+
+  // Observer akan otomatis attach handle setiap kali DOM tabel berubah
+  setupPivotResizeObserver();
 };
 
 const resetPivotConfig = () => {
@@ -182,6 +191,70 @@ watch(activeTab, async (tab) => {
     pivotRendered.value = true;
   }
 });
+
+// ── Resize kolom pivot table (mirip pola BaseBrowse) ───────────────────
+let pivotResizeObserver: MutationObserver | null = null;
+
+const attachPivotColumnResize = () => {
+  if (!pivotContainer.value) return;
+  const table = pivotContainer.value.querySelector(
+    "table.pvtTable",
+  ) as HTMLElement | null;
+  if (!table) return;
+
+  const ths = table.querySelectorAll("th");
+  ths.forEach((th) => {
+    if ((th as HTMLElement).querySelector(".pvt-resize-handle")) return;
+
+    (th as HTMLElement).style.position = "relative";
+
+    const handle = document.createElement("div");
+    handle.className = "pvt-resize-handle";
+    (th as HTMLElement).appendChild(handle);
+
+    handle.addEventListener("mousedown", (e: Event) => {
+      const me = e as MouseEvent;
+      me.preventDefault();
+      me.stopPropagation();
+      const startX = me.clientX;
+      const startW = (th as HTMLElement).getBoundingClientRect().width;
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+
+      const onMove = (ev: MouseEvent) => {
+        const newW = Math.max(40, startW + (ev.clientX - startX));
+        (th as HTMLElement).style.width = `${newW}px`;
+        (th as HTMLElement).style.minWidth = `${newW}px`;
+        (th as HTMLElement).style.maxWidth = `${newW}px`;
+      };
+      const onUp = () => {
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+      };
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+    });
+  });
+};
+
+// Amati perubahan DOM pivot table, pasang handle setiap kali tabel di-render ulang
+const setupPivotResizeObserver = () => {
+  if (!pivotContainer.value) return;
+  if (pivotResizeObserver) pivotResizeObserver.disconnect();
+
+  pivotResizeObserver = new MutationObserver(() => {
+    attachPivotColumnResize();
+  });
+  pivotResizeObserver.observe(pivotContainer.value, {
+    childList: true,
+    subtree: true,
+  });
+
+  // Attach langsung untuk state saat ini juga
+  attachPivotColumnResize();
+};
 
 // ── Chart ─────────────────────────────────────────────────────────────
 const chartType = ref<"column" | "bar" | "line" | "area" | "pie">("column");
@@ -208,7 +281,7 @@ const getPivotConfig = () => {
 };
 
 // Bangun plainData (sama seperti renderPivot/doExportPivot)
-const buildPlainData = () => {
+const buildPlainData = (): Record<string, any>[] => {
   const plainData: Record<string, any>[] = [];
   for (const r of items.value) {
     const base = {
@@ -236,7 +309,7 @@ const chartData = computed(() => {
   void pivotConfigVersion.value;
   const { rows, cols, vals, aggregatorName, exclusions, inclusions } =
     getPivotConfig();
-  let plainData = buildPlainData();
+  let plainData: Record<string, any>[] = buildPlainData();
 
   // Inclusions: jika attr punya inclusions, hanya tampilkan value yang ada di list
   for (const attr of Object.keys(inclusions)) {
@@ -483,24 +556,7 @@ const doExportPivot = async () => {
   const vals: string[] = config.vals ?? ["Nilai"];
   const aggregator: string = config.aggregatorName ?? "Sum";
 
-  const plainData: Record<string, any>[] = [];
-  for (const r of items.value) {
-    const base = {
-      Bulan: String(r.Bulan),
-      Tahun: String(r.Tahun),
-      Account: r.Account ?? "",
-      AccountName: r.AccountName ?? "",
-      Keterangan: r.Keterangan ?? "",
-      DetailCC: r.DetailCC ?? "",
-      Referensi: r.Referensi ?? "",
-      Tanggal: r.Tanggal ?? "",
-      Nomor: r.Nomor ?? "",
-    };
-    if (Number(r.Debet))
-      plainData.push({ ...base, Jenis: "Debet", Nilai: Number(r.Debet) });
-    if (Number(r.Kredit))
-      plainData.push({ ...base, Jenis: "Kredit", Nilai: Number(r.Kredit) });
-  }
+  const plainData = buildPlainData();
 
   await exportListJurnalFromConfig(
     plainData,
@@ -512,6 +568,10 @@ const doExportPivot = async () => {
     filterState.value.endDate,
   );
 };
+
+onUnmounted(() => {
+  if (pivotResizeObserver) pivotResizeObserver.disconnect();
+});
 </script>
 
 <template>
@@ -671,7 +731,8 @@ const doExportPivot = async () => {
           <div class="pivot-hint">
             <span>
               Drag field ke baris/kolom. Tersedia: AccountName, Account,
-              Tanggal, Tahun, Bulan, Nomor, Referensi, Jenis, Nilai, DetailCC.
+              Tanggal, Tahun, Bulan, Nomor, Referensi, DetailCC, Jenis
+              (Debet/Kredit), Nilai.
             </span>
             <div class="d-flex gap-2">
               <v-btn
@@ -944,9 +1005,11 @@ const doExportPivot = async () => {
   border: 1px solid rgba(var(--v-border-color), 0.1) !important;
 }
 :deep(.pvtTotal),
-:deep(.pvtGrandTotal) {
-  font-weight: 700 !important;
-  background: rgba(46, 125, 50, 0.07) !important;
+:deep(.pvtGrandTotal),
+:deep(.pvtTotalLabel),
+:deep(.pvtRowTotalLabel),
+:deep(.pvtColTotalLabel) {
+  display: none !important;
 }
 
 /* ── Chart ── */
@@ -1129,5 +1192,35 @@ const doExportPivot = async () => {
 }
 .chart-type-select:focus {
   border-color: #2e7d32;
+}
+
+/* ── Resize handle pivot ── */
+:deep(.pvt-resize-handle) {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 10;
+  border-right: 2px solid rgba(255, 255, 255, 0.25);
+  transition: border-color 0.15s;
+}
+:deep(.pvt-resize-handle:hover),
+:deep(.pvt-resize-handle:active) {
+  border-right-color: rgba(255, 255, 255, 0.85);
+}
+
+/* Batasi lebar default kolom pivot agar tidak auto-stretch penuh,
+   dan pastikan teks panjang di-wrap/truncate sebelum di-resize manual */
+:deep(.pvtTable th),
+:deep(.pvtTable td) {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:deep(.pvtTable) {
+  table-layout: fixed;
 }
 </style>
