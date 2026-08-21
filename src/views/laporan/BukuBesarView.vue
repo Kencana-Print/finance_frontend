@@ -280,7 +280,7 @@ const doExport = () =>
     :items="items"
     :is-loading="isLoading"
     :fixed-layout="false"
-    item-value="Nomor"
+    item-value="id"
     :row-props-fn="rowPropsFn"
     :filter-values="filterValues"
     @refresh="loadData"
