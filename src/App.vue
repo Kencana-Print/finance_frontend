@@ -193,4 +193,19 @@ const goToLogin = () => {
 .notes-list li {
   margin-bottom: 4px;
 }
+.col-resize-handle-form {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 5px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 10;
+  border-right: 2px solid rgba(0, 0, 0, 0.08);
+  transition: border-color 0.15s;
+}
+.col-resize-handle-form:hover,
+.col-resize-handle-form:active {
+  border-right-color: rgba(46, 125, 50, 0.6);
+}
 </style>

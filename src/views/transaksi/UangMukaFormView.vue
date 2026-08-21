@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted, nextTick } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useToast } from "vue-toastification";
 import { useAuthStore } from "@/stores/authStore";
+import { useTableColumnResize } from "@/composables/useTableColumnResize";
 import BaseForm from "@/components/BaseForm.vue";
 import {
   IconReceipt2,
@@ -27,6 +28,8 @@ const MENU_ID = "21";
 const isEdit = computed(() => !!route.params.nomor);
 const isLoading = ref(false);
 const isSaving = ref(false);
+const tableWrapRef = ref<HTMLElement | null>(null);
+useTableColumnResize(tableWrapRef, { tableSelector: "table.detail-table" });
 
 const showSaveDialog = ref(false);
 const showCancelDialog = ref(false);
@@ -681,7 +684,7 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
         </div>
 
         <!-- Tabel detail -->
-        <div class="detail-table-wrap">
+        <div class="detail-table-wrap" ref="tableWrapRef">
           <table class="detail-table">
             <thead>
               <tr>
@@ -1201,6 +1204,7 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
   width: 100%;
   border-collapse: collapse;
   font-size: 11px;
+  table-layout: fixed;
 }
 .detail-table thead tr {
   background: #2e7d32;
