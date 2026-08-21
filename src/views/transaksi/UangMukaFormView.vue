@@ -1204,7 +1204,6 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
   width: 100%;
   border-collapse: collapse;
   font-size: 11px;
-  table-layout: fixed;
 }
 .detail-table thead tr {
   background: #2e7d32;

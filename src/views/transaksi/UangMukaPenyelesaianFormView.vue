@@ -1836,7 +1836,6 @@ const rowClass = (d: PenyelesaianDetail) => {
   width: 100%;
   border-collapse: collapse;
   font-size: 11px;
-  table-layout: fixed;
 }
 .detail-table thead tr {
   background: #2e7d32;
