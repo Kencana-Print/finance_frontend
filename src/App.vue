@@ -193,11 +193,17 @@ const goToLogin = () => {
 .notes-list li {
   margin-bottom: 4px;
 }
+</style>
+
+<style>
+/* ── Resize handle untuk tabel form — TIDAK scoped, karena elemen ini
+   dibuat via document.createElement() di composable useTableColumnResize,
+   bukan lewat template Vue, jadi tidak bisa kena atribut data-v-xxxx ── */
 .col-resize-handle-form {
   position: absolute;
   right: 0;
   top: 0;
-  width: 5px;
+  width: 6px;
   height: 100%;
   cursor: col-resize;
   z-index: 10;
