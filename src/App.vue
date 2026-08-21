@@ -194,24 +194,3 @@ const goToLogin = () => {
   margin-bottom: 4px;
 }
 </style>
-
-<style>
-/* ── Resize handle untuk tabel form — TIDAK scoped, karena elemen ini
-   dibuat via document.createElement() di composable useTableColumnResize,
-   bukan lewat template Vue, jadi tidak bisa kena atribut data-v-xxxx ── */
-.col-resize-handle-form {
-  position: absolute;
-  right: 0;
-  top: 0;
-  width: 6px;
-  height: 100%;
-  cursor: col-resize;
-  z-index: 10;
-  border-right: 2px solid rgba(0, 0, 0, 0.08);
-  transition: border-color 0.15s;
-}
-.col-resize-handle-form:hover,
-.col-resize-handle-form:active {
-  border-right-color: rgba(46, 125, 50, 0.6);
-}
-</style>

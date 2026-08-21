@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import PageLayout from "@/components/PageLayout.vue";
 import {
   IconDeviceFloppy,
   IconX,
   IconAlertTriangle,
   IconCircleX,
+  IconChevronLeft,
+  IconChevronRight,
 } from "@tabler/icons-vue";
 
 const props = defineProps<{
@@ -27,6 +30,9 @@ const emit = defineEmits([
   "confirm-cancel",
   "confirm-close",
 ]);
+
+// ── Collapse kolom kiri — memberi ruang lebih ke tabel di right-column ──
+const leftCollapsed = ref(false);
 </script>
 
 <template>
@@ -79,12 +85,33 @@ const emit = defineEmits([
             : !$slots['left-column'] && $slots['right-column']
               ? 'single-column'
               : 'custom-layout',
+        { 'left-collapsed': leftCollapsed },
       ]"
     >
       <template v-if="$slots['left-column'] || $slots['right-column']">
         <aside class="left-column" v-if="$slots['left-column']">
           <slot name="left-column" />
         </aside>
+
+        <!-- Toggle handle — muncul hanya jika ada left-column -->
+        <button
+          v-if="$slots['left-column']"
+          type="button"
+          class="collapse-toggle"
+          :class="{ collapsed: leftCollapsed }"
+          :title="
+            leftCollapsed ? 'Tampilkan panel info' : 'Sembunyikan panel info'
+          "
+          @click="leftCollapsed = !leftCollapsed"
+        >
+          <IconChevronLeft
+            v-if="!leftCollapsed"
+            :size="14"
+            :stroke-width="2.2"
+          />
+          <IconChevronRight v-else :size="14" :stroke-width="2.2" />
+        </button>
+
         <main class="center-column" v-if="$slots['center-column']">
           <slot name="center-column" />
         </main>
@@ -181,6 +208,10 @@ const emit = defineEmits([
   grid-template-columns: 320px 1fr;
   gap: 16px;
   background: #f1f8f1;
+  position: relative;
+  transition:
+    grid-template-columns 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    gap 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .form-grid-container.three-column {
   grid-template-columns: 280px 1fr 200px;
@@ -195,11 +226,29 @@ const emit = defineEmits([
   overflow: hidden;
 }
 
+/* ── Collapsed state — kolom kiri hilang, kanan mengisi penuh ── */
+.form-grid-container.left-collapsed {
+  grid-template-columns: 0px 1fr !important;
+  gap: 0 !important;
+}
+.form-grid-container.left-collapsed.three-column {
+  grid-template-columns: 0px 1fr 200px !important;
+}
+
 .left-column,
 .right-column {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
+}
+.left-column {
+  overflow: hidden;
+  transition: opacity 0.2s ease;
+}
+.form-grid-container.left-collapsed .left-column {
+  opacity: 0;
+  pointer-events: none;
 }
 .right-column {
   flex-grow: 1;
@@ -219,6 +268,32 @@ const emit = defineEmits([
   flex-direction: column;
 }
 
+/* ── Toggle button — nempel di tepi kiri right-column ── */
+.collapse-toggle {
+  position: absolute;
+  top: 4px;
+  left: 328px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid #c8e6c9;
+  background: white;
+  color: #2e7d32;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 20;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.collapse-toggle:hover {
+  background: #f0fdf4;
+}
+.collapse-toggle.collapsed {
+  left: 4px;
+}
+
 /* Section card di dalam form — Finance pakai garis hijau */
 :deep(.desktop-form-section) {
   padding: 14px 16px;
@@ -235,12 +310,10 @@ const emit = defineEmits([
 .form-left-col {
   overflow-y: auto;
   height: 100%;
-  min-height: 0; /* ← wajib agar flex child bisa scroll */
+  min-height: 0;
 }
 
 /* ── Responsif ── */
-
-/* Tablet landscape (≤1280px) */
 @media (max-width: 1280px) {
   .form-grid-container {
     grid-template-columns: 280px 1fr;
@@ -251,12 +324,13 @@ const emit = defineEmits([
   .form-grid-container.three-column {
     grid-template-columns: 240px 1fr 180px;
   }
+  .collapse-toggle {
+    left: 288px;
+  }
 }
 
-/* Tablet portrait (≤1024px) */
 @media (max-width: 1024px) {
   .form-grid-container {
-    /* Stack kolom vertikal */
     grid-template-columns: 1fr !important;
     grid-template-rows: auto;
     height: auto;
@@ -273,27 +347,26 @@ const emit = defineEmits([
     min-height: 400px;
     overflow: visible;
   }
-  /* Kolom kiri tidak lagi fixed width */
   .left-column {
     min-height: unset;
   }
   .right-column {
     min-width: unset;
   }
-  /* Section card lebih kompak */
   :deep(.desktop-form-section) {
     padding: 10px 12px;
     margin-bottom: 8px;
   }
+  .collapse-toggle {
+    display: none; /* di layar sempit, kolom sudah stack vertikal */
+  }
 }
 
-/* Mobile (≤768px) */
 @media (max-width: 768px) {
   .form-grid-container {
     padding: 4px;
     gap: 6px;
   }
-  /* Font sedikit lebih kecil */
   .form-grid-container :deep(*) {
     font-size: 10px !important;
   }
@@ -302,6 +375,5 @@ const emit = defineEmits([
     margin-bottom: 6px;
     border-radius: 6px;
   }
-  /* Header action lebih ringkas */
 }
 </style>

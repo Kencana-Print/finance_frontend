@@ -17,7 +17,6 @@ import {
 } from "@/api/transaksi/uangMukaPenyelesaianApi";
 import { uangMukaFormApi } from "@/api/transaksi/uangMukaFormApi";
 import { bbkFormApi } from "@/api/transaksi/bbkFormApi";
-import { useTableColumnResize } from "@/composables/useTableColumnResize";
 
 const route = useRoute();
 const router = useRouter();
@@ -27,8 +26,6 @@ const MENU_ID = "21";
 const isLoading = ref(false);
 const isSaving = ref(false);
 const originalForm = ref<any>(null);
-const tableWrapRef = ref<HTMLElement | null>(null);
-useTableColumnResize(tableWrapRef, { tableSelector: "table.detail-table" });
 
 const showSaveDialog = ref(false);
 const showCancelDialog = ref(false);
@@ -870,7 +867,7 @@ const rowClass = (d: PenyelesaianDetail) => {
           </div>
         </div>
 
-        <div class="detail-table-wrap" ref="tableWrapRef">
+        <div class="detail-table-wrap">
           <table class="detail-table">
             <thead>
               <tr>
