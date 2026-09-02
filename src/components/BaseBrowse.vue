@@ -480,7 +480,7 @@ watch(
         Export
       </v-btn>
       <slot name="extra-actions" :selected="internalSelected" />
-      <v-btn size="small" variant="text" @click="$router.back()">
+      <v-btn size="small" variant="text" @click="$router.push('/')">
         <template #prepend><IconX :size="14" :stroke-width="2.2" /></template>
         Tutup
       </v-btn>
