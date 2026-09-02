@@ -9,10 +9,10 @@ export interface BbkFormDetail {
   total: number,
   rekkode: string;
   reknama: string;
+  dckode?: number;
   cckode: number;
   ccnama: string;
   dcnama: string;
-  dckode: number;
   kdsup: string;
   supplier: string;
   bank: string;

@@ -9,10 +9,10 @@ export interface BkkFormDetail {
   total: number,
   rekkode: string;
   reknama: string;
+  dckode?: number;
   cckode: number;
   ccnama: string;
   dcnama: string;
-  dckode: number;
   mb: string;
   kdbrg: string;
   jenis_item: string;
