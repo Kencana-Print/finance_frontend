@@ -428,7 +428,13 @@ const loadDetailBaru = async (nomor: string, tipe: string) => {
       form.value.detail.splice(activePjhIdx.value, 1);
     }
     // Append data detail baru
-    form.value.detail.push(...detailTambahan);
+    // form.value.detail.push(...detailTambahan);
+    form.value.detail.push(
+        ...detailTambahan.map((item: any) => ({
+        ...item,
+        dckode: item.dckode ?? 0, // Mengisi dckode dengan 0 jika nilainya tidak ada/undefined
+      }))
+    );
   } catch {
     toast.error("Gagal memuat detail.");
   }
