@@ -13,6 +13,10 @@ import {
   IconTrash,
   IconPrinter,
 } from "@tabler/icons-vue";
+import {
+  uangMukaPenyelesaianApi,
+  type PenyelesaianDetail,
+} from "@/api/transaksi/uangMukaPenyelesaianApi";
 import { bbkFormApi, type BbkFormDetail } from "@/api/transaksi/bbkFormApi";
 
 const route = useRoute();
@@ -24,12 +28,14 @@ const MENU_ID = "24";
 const isEdit = computed(() => !!route.params.nomor);
 const isLoading = ref(false);
 const isSaving = ref(false);
-
+const activePjhIdx = ref(-1);
+const showModalMb = ref(false);
 const showSaveDialog = ref(false);
 const showCancelDialog = ref(false);
 const showCloseDialog = ref(false);
 const showPrintDialog = ref(false);
 const savedNomor = ref("");
+const optMb = ref<any[]>([]);
 
 const today = new Date().toISOString().slice(0, 10);
 
@@ -60,9 +66,14 @@ const accountAllOptions = ref<{ kode: string; nama: string; cabang: string }[]>(
 );
 
 // ── Total ─────────────────────────────────────────────────────────────
-const totalBbk = computed(() =>
-  form.value.detail.reduce((s, d) => s + (Number(d.nominal) || 0), 0),
+const Totalbbk = computed(() =>
+  form.value.detail.reduce((s, d) => s + (Number(d.total) || 0), 0),
 );
+
+const hitungTotal = (d: BbkFormDetail) => {
+  d.total = d.qty * d.harga;
+};
+
 const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
 
 const parseNum = (v: string) =>
@@ -70,15 +81,37 @@ const parseNum = (v: string) =>
 
 const formatNum = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
 
-const onNominalInput = (d: BbkFormDetail, e: Event) => {
-  d.nominal = parseNum((e.target as HTMLInputElement).value);
+const onHargaInput = (d: BbkFormDetail, e: Event) => {
+  d.harga = Math.max(0,parseNum((e.target as HTMLInputElement).value));
+  hitungTotal(d);
 };
-const onNominalBlur = (d: BbkFormDetail, e: Event) => {
-  (e.target as HTMLInputElement).value = formatNum(d.nominal);
+const onHargaBlur = (d: BbkFormDetail, e: Event) => {
+  (e.target as HTMLInputElement).value = formatNum(d.harga);
 };
-const onNominalFocus = (d: BbkFormDetail, e: Event) => {
-  (e.target as HTMLInputElement).value = d.nominal ? String(d.nominal) : "";
+const onHargaFocus = (d: BbkFormDetail, e: Event) => {
+  (e.target as HTMLInputElement).value = d.harga ? String(d.harga) : "";
 };
+
+const onQtyInput = (d: BbkFormDetail, e: Event) => {
+  d.qty = Math.max(0,parseNum((e.target as HTMLInputElement).value));
+  hitungTotal(d);
+};
+const onQtyBlur = (d: BbkFormDetail, e: Event) => {
+  (e.target as HTMLInputElement).value = formatNum(d.qty);
+};
+const onQtyFocus = (d: BbkFormDetail, e: Event) => {
+  (e.target as HTMLInputElement).value = d.qty ? String(d.qty) : "";
+};
+
+// const onNominalInput = (d: BbkFormDetail, e: Event) => {
+//   d.total = parseNum((e.target as HTMLInputElement).value);
+// };
+// const onNominalBlur = (d: BbkFormDetail, e: Event) => {
+//   (e.target as HTMLInputElement).value = formatNum(d.total);
+// };
+// const onNominalFocus = (d: BbkFormDetail, e: Event) => {
+//   (e.target as HTMLInputElement).value = d.total ? String(d.total) : "";
+// };
 
 // ── onMounted ─────────────────────────────────────────────────────────
 onMounted(async () => {
@@ -241,7 +274,10 @@ const addRow = () => {
   form.value.detail.push({
     no: form.value.detail.length + 1,
     uraian: "",
-    nominal: 0,
+    satuan: "",
+    qty: 1,
+    harga: 0,
+    total: 0,
     rekkode: "",
     reknama: "",
     cckode: 0,
@@ -253,11 +289,33 @@ const addRow = () => {
     bank: "",
     rekening: "",
     atasnama: "",
+    kdbrg: "",
+    mb: "",
+    jenis_item: "",
+    cab_item: "",    
   });
 };
 
 const removeRow = (idx: number) => {
-  form.value.detail.splice(idx, 1);
+  const d = form.value.detail[idx];
+  // Jika MB kosong, langsung hapus row
+  if (!d.mb) {
+    form.value.detail.splice(idx, 1);
+    return;
+  }  
+  // Jika MB terisi, minta konfirmasi
+  const mb = d.mb;
+  const yakin = window.confirm(`Yakin akan hapus no. MB ${mb}?`);
+
+  // Jika pilih Cancel
+  if (!yakin) {
+    return;
+  }
+
+  // Jika pilih OK, hapus semua row dengan MB yang sama
+  form.value.detail = form.value.detail.filter(
+    (item) => item.mb !== mb
+  );  
 };
 
 // ── Validasi ──────────────────────────────────────────────────────────
@@ -271,7 +329,7 @@ const validateSave = () => {
     toast.warning("Detail harus diisi.");
     return;
   }
-  if (totalBbk.value === 0) {
+  if (Totalbbk.value === 0) {
     toast.warning("Total BBK kosong. Tidak bisa disimpan.");
     return;
   }
@@ -280,6 +338,10 @@ const validateSave = () => {
       toast.warning("Nama Account harus diisi.");
       return;
     }
+    if (d.qty !== 0 && d.harga === 0) {
+      toast.warning("Jika Qty di isi harga juga harus di isi.");
+      return;
+    }  
     const prefix = (d.rekkode || "").substring(0, 1);
     if (prefix !== "A" && prefix !== "B") {
       if (d.dckode === 0) {
@@ -340,6 +402,62 @@ const confirmClose = () => {
   showCloseDialog.value = false;
   router.push({ name: "BbkBrowse" });
 };
+
+const onMbKeyDown = async (e: KeyboardEvent, idx: number) => {
+  const d = form.value.detail[idx];
+  if (e.key !== "F4" || d.mb !== "") {
+    e.preventDefault();
+    return;
+  }
+  if (["F4"].includes(e.key)) {
+    e.preventDefault(); // Blok fungsi bawaan browser (seperti Help atau Search)
+    activePjhIdx.value = idx;
+
+    try {
+      if (e.key === "F4") {
+        optMb.value = await uangMukaPenyelesaianApi.getListPermintaanGarmen(
+          form.value.cabang,
+        );
+        showModalMb.value = true;
+      }
+    } catch {
+      toast.error("Gagal mengambil data dari server.");
+    }
+  }
+};
+
+const cekDuplikatPjh = (nomor: string) => {
+  return form.value.detail.some((d) => d.mb === nomor);
+};
+
+// ── Select Handlers (F1, F4, F5 load banyak baris dari DB) ────────────
+const loadDetailBaru = async (nomor: string, tipe: string) => {
+  if (cekDuplikatPjh(nomor)) return toast.warning("Nomor tsb sudah di input");
+
+  try {
+    let detailTambahan: PenyelesaianDetail[] = [];
+
+    // Gunakan fungsi detail yang spesifik
+    if (tipe === "minta-garmen") {
+      detailTambahan =  await uangMukaPenyelesaianApi.getDetailPermintaanGarmen(nomor);
+    }
+
+    // Hapus baris kosong yang sedang aktif jika uraian kosong
+    if (!form.value.detail[activePjhIdx.value].uraian) {
+      form.value.detail.splice(activePjhIdx.value, 1);
+    }
+    // Append data detail baru
+    form.value.detail.push(...detailTambahan);
+  } catch {
+    toast.error("Gagal memuat detail.");
+  }
+};
+
+const selectMb = (item: any) => {
+  loadDetailBaru(item.nomor, "minta-garmen");
+  showModalMb.value = false;
+};
+
 </script>
 
 <template>
@@ -420,6 +538,8 @@ const confirmClose = () => {
                 v-model="form.penerima"
                 class="form-inp"
                 placeholder="Penerima"
+                maxlength="100"
+                @update:model-value="form.penerima= $event.toUpperCase()"
               />
             </div>
             <div class="field-row">
@@ -428,6 +548,8 @@ const confirmClose = () => {
                 v-model="form.nota"
                 class="form-inp"
                 placeholder="No. nota"
+                maxlength="20"
+                @update:model-value="form.nota= $event.toUpperCase()"
               />
             </div>
           </div>
@@ -460,7 +582,7 @@ const confirmClose = () => {
         <!-- Total box -->
         <div class="total-box">
           <span class="total-lbl">Total BBK</span>
-          <span class="total-val">{{ fmt(totalBbk) }}</span>
+          <span class="total-val">{{ fmt(Totalbbk) }}</span>
         </div>
       </div>
     </template>
@@ -470,6 +592,10 @@ const confirmClose = () => {
       <div style="height: 100%; display: flex; flex-direction: column">
         <div class="d-flex align-center justify-space-between mb-2">
           <div class="section-title">Detail Pengeluaran Bank</div>
+          <div class="legend-row">
+            <span class="legend-dot dot-red"></span
+            ><span class="legend-lbl">Total=0</span>
+          </div>          
           <v-btn size="small" color="primary" variant="tonal" @click="addRow">
             <template #prepend
               ><IconPlus :size="13" :stroke-width="2"
@@ -483,8 +609,12 @@ const confirmClose = () => {
             <thead>
               <tr>
                 <th style="width: 35px">No</th>
+                <th style="min-width: 120px">No.Pengajuan</th>
                 <th style="min-width: 200px">Uraian</th>
-                <th style="width: 130px">Nominal</th>
+                <th style="width: 55px">Satuan</th>
+                <th style="width: 80px">Qty</th>
+                <th style="width: 120px">Nominal Satuan</th>
+                <th style="width: 120px">Total</th>
                 <th style="min-width: 110px">Account</th>
                 <th style="min-width: 220px">Nama Account</th>
                 <th style="min-width: 200px">Cost Center</th>
@@ -494,33 +624,80 @@ const confirmClose = () => {
                 <th style="min-width: 100px">Bank</th>
                 <th style="min-width: 120px">Rekening</th>
                 <th style="min-width: 110px">Atas Nama</th>
+                <th style="width: 60px">Jenis</th>
+                <th style="width: 55px">Cab</th>
+                <th style="min-width: 80px">Kd.Brg</th>
                 <th style="width: 28px"></th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(d, idx) in form.detail" :key="idx">
+              <tr v-for="(d, idx) in form.detail" :key="idx" :class="{ 'row-zero-total': d.total === 0 }">
                 <td class="tc">{{ idx + 1 }}</td>
+
+                <!-- No.Pengajuan pembelian -->
+                <td>
+                  <span v-if="d.mb" class="cell-text">{{
+                    d.mb
+                  }}</span>
+                  <input
+                    v-else
+                    v-model="d.mb"
+                    class="cell-inp"
+                    placeholder="F4 utk cari"
+                    @keydown="onMbKeyDown($event, idx)"
+                  />
+                </td>
 
                 <td>
                   <input
                     v-model="d.uraian"
                     class="cell-inp"
                     placeholder="Keterangan pengeluaran"
+                    maxlength="250"
+                    @update:model-value="d.uraian = $event.toUpperCase()"
                   />
                 </td>
 
+                <!-- Satuan -->
+                <td>
+                  <input v-model="d.satuan" class="cell-inp" 
+                  maxlength="10"
+                  @update:model-value="d.satuan = $event.toUpperCase()"
+                  />
+                </td>
+
+                <!-- Qty -->
                 <td>
                   <input
-                    :value="formatNum(d.nominal)"
+                    :value="formatNum(d.qty)"
                     type="text"
                     inputmode="numeric"
                     class="cell-inp tr"
-                    style="min-width: 100px"
-                    @focus="onNominalFocus(d, $event)"
-                    @input="onNominalInput(d, $event)"
-                    @blur="onNominalBlur(d, $event)"
+                    style="min-width: 65px"
+                    @focus="onQtyFocus(d, $event)"
+                    @input="onQtyInput(d, $event)"
+                    @blur="onQtyBlur(d, $event)"
+                    @update:model-value="d.qty = Math.max(0,Number($event) || 0)"
                   />
                 </td>
+
+                <!-- Nominal Satuan -->
+                <td>
+                  <input
+                    :value="formatNum(d.harga)"
+                    type="text"
+                    inputmode="numeric"
+                    class="cell-inp tr"
+                    style="min-width: 65px"
+                    @focus="onHargaFocus(d, $event)"
+                    @input="onHargaInput(d, $event)"
+                    @blur="onHargaBlur(d, $event)"
+                  />
+                </td>
+
+                <!-- Total -->
+                <td class="tr cell-total" :class="{ 'text-red': d.total === 0 }">
+                  {{ fmt(d.total) }}</td>
 
                 <!-- Account -->
                 <td>
@@ -647,6 +824,22 @@ const confirmClose = () => {
                   />
                 </td>
 
+                <!-- Jenis (item) -->
+                <td>
+                  <span class="cell-text">{{ d.jenis_item || "-" }}</span>
+                </td>
+
+                <!-- Cab -->
+                <td>
+                  <span class="cell-text">{{ d.cab_item || "-" }}</span>
+                </td>
+
+                <!-- Kd.Brg -->
+                <td>
+                  <span class="cell-text">{{ d.kdbrg || "-" }}</span>
+                </td>
+
+                <!-- Hapus -->
                 <td class="tc">
                   <button
                     class="del-btn"
@@ -776,6 +969,22 @@ const confirmClose = () => {
     @select="selectSupplier"
     @search="searchSupplier"
   />
+  <SearchModal
+  v-model="showModalMb"
+  title="Permintaan Garmen (F4)"
+  :columns="[
+    { key: 'nomor', title: 'Nomor' },
+    { key: 'tanggal', title: 'Tanggal' },
+    { key: 'jenis', title: 'Jenis' },
+    { key: 'keterangan', title: 'Keterangan' },
+    { key: 'usr', title: 'User' },
+    { key: 'bagian', title: 'Bagian' },
+  ]"
+  :items="optMb"
+  @select="selectMb"
+  search-placeholder="Cari Permintaan..."
+  :search-keys="['nomor', 'jenis', 'keterangan', 'bagian']"
+/>
 </template>
 
 <style scoped>
@@ -1023,5 +1232,55 @@ const confirmClose = () => {
   cursor: pointer;
   color: #c62828;
   padding: 2px;
+}
+
+/* Legend */
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 2px 0;
+}
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.legend-lbl {
+  color: #555;
+}
+.dot-red {
+  background: #c62828;
+}
+.dot-blue {
+  background: #1565c0;
+}
+.dot-green {
+  background: #2e7d32;
+}
+.dot-redx {
+  background: #d32f2f;
+}
+
+/* Warna font merah untuk baris dengan Total = 0 */
+.row-zero-total {
+  color: #d32f2f !important;
+}
+/* Jika di dalam baris ada input, ubah juga warna font input-nya */
+.row-zero-total .cell-inp {
+  color: #d32f2f !important;
+  border-color: #ffcdd2;
+}
+/* Biar teks di cell-text dan cell-total ikut merah */
+.row-zero-total .cell-text,
+.row-zero-total .cell-total {
+  color: #d32f2f !important;
+  font-weight: 600;
+}
+.text-red {
+  color: #d32f2f !important;
+  font-weight: 700;
 }
 </style>
