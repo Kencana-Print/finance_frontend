@@ -3,13 +3,20 @@ import api from "@/api/axios";
 export interface BkkFormDetail {
   no: number;
   uraian: string;
-  nominal: number;
+  satuan: string,
+  qty: number,
+  harga: number,
+  total: number,
   rekkode: string;
   reknama: string;
   cckode: number;
   ccnama: string;
   dcnama: string;
   dckode: number;
+  mb: string;
+  kdbrg: string;
+  jenis_item: string;
+  cab_item: string;
 }
 
 export interface BkkForm {
@@ -64,4 +71,6 @@ export const bkkFormApi = {
     );
     return data.data;
   },
+
+
 };
