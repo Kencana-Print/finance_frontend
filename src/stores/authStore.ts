@@ -4,9 +4,9 @@ import { authApi, type AuthUser, type MenuPermission } from "@/api/authApi";
 
 const TOKEN_KEY = "finance_token";
 const USER_KEY = "finance_user";
+const ACTIVE_CABANG_KEY = "finance_active_cabang";
 
 export const useAuthStore = defineStore("auth", () => {
-  // ── State ────────────────────────────────────────────────────────────────
   const token = ref<string | null>(localStorage.getItem(TOKEN_KEY));
   const user = ref<AuthUser | null>(
     (() => {
@@ -18,21 +18,31 @@ export const useAuthStore = defineStore("auth", () => {
     })(),
   );
 
-  // ── Getters ──────────────────────────────────────────────────────────────
   const isAuthenticated = computed(() => !!token.value && !!user.value);
   const isAdmin = computed(() => user.value?.level === "ADMIN");
   const userName = computed(() => user.value?.nama || "");
   const userKode = computed(() => user.value?.kode || "");
   const userCabang = computed(() => user.value?.cabang || "");
 
-  // ── Permission check ─────────────────────────────────────────────────────
-  // Mirip ceKVIEW() di Delphi tapi lebih granular (view/insert/edit/delete/print)
+  // ── Cabang aktif — untuk lihat dashboard/laporan cabang lain ─────────
+  const activeCabang = ref<string>(
+    localStorage.getItem(ACTIVE_CABANG_KEY) || user.value?.cabang || "",
+  );
+
+  const cabangOptions = computed(() => user.value?.cabangList ?? []);
+  const canSwitchCabang = computed(() => cabangOptions.value.length > 1);
+
+  const setActiveCabang = (cabang: string) => {
+    if (!cabangOptions.value.includes(cabang)) return;
+    activeCabang.value = cabang;
+    localStorage.setItem(ACTIVE_CABANG_KEY, cabang);
+  };
+
   const can = (
     menuId: string,
     action: "view" | "insert" | "edit" | "delete" | "print" = "view",
   ): boolean => {
     if (isAdmin.value) return true;
-    // Belum ada data menus → izinkan semua (fallback)
     if (!user.value?.menus?.length) return true;
 
     const menu = user.value.menus.find(
@@ -49,13 +59,16 @@ export const useAuthStore = defineStore("auth", () => {
     return menu[col] === "Y";
   };
 
-  // ── Actions ──────────────────────────────────────────────────────────────
   const login = async (username: string, password: string) => {
     const result = await authApi.login({ username, password });
     token.value = result.token;
     user.value = result.user;
     localStorage.setItem(TOKEN_KEY, result.token);
     localStorage.setItem(USER_KEY, JSON.stringify(result.user));
+
+    // Reset cabang aktif ke cabang login setiap kali login baru
+    activeCabang.value = result.user.cabang;
+    localStorage.setItem(ACTIVE_CABANG_KEY, result.user.cabang);
   };
 
   const logout = () => {
@@ -63,9 +76,9 @@ export const useAuthStore = defineStore("auth", () => {
     user.value = null;
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(ACTIVE_CABANG_KEY);
   };
 
-  // Refresh data user dari server (misalnya setelah update profil)
   const refreshUser = async () => {
     try {
       const fresh = await authApi.me();
@@ -84,6 +97,10 @@ export const useAuthStore = defineStore("auth", () => {
     userName,
     userKode,
     userCabang,
+    activeCabang, // ← baru
+    cabangOptions, // ← baru
+    canSwitchCabang, // ← baru
+    setActiveCabang, // ← baru
     can,
     login,
     logout,

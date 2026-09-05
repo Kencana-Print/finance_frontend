@@ -10,6 +10,7 @@ export interface AuthUser {
   nama: string;
   level: string;
   cabang: string;
+  cabangList?: string[];
   menus?: MenuPermission[];
 }
 

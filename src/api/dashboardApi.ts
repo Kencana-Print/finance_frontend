@@ -5,8 +5,10 @@ export interface DashboardSummary {
   transfer: { count: number; total: number };
   setoran: { count: number };
   serverDate: string;
-  // Tambahan:
-  saldoKas: { account: string; saldo: number };
+  saldo: {
+    kas: { account: string; saldo: number; count: number };
+    bank: { account: string; saldo: number; count: number };
+  };
   rekon: { selisihCount: number };
   stok: { negativeCount: number };
   voucherPt: { count: number; total: number };
@@ -14,8 +16,10 @@ export interface DashboardSummary {
 }
 
 export const dashboardApi = {
-  getSummary: async (): Promise<DashboardSummary> => {
-    const { data } = await apiClient.get("/dashboard/summary");
+  getSummary: async (cabang?: string): Promise<DashboardSummary> => {
+    const { data } = await apiClient.get("/dashboard/summary", {
+      params: cabang ? { cabang } : undefined,
+    });
     return data.data;
   },
 };

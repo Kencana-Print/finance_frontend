@@ -60,7 +60,10 @@ const summaryData = ref<DashboardSummary>({
   transfer: { count: 0, total: 0 },
   setoran: { count: 0 },
   serverDate: "",
-  saldoKas: { account: "", saldo: 0 },
+  saldo: {
+    kas: { account: "", saldo: 0, count: 0 },
+    bank: { account: "", saldo: 0, count: 0 },
+  },
   rekon: { selisihCount: 0 },
   stok: { negativeCount: 0 },
   voucherPt: { count: 0, total: 0 },
@@ -75,7 +78,7 @@ onMounted(async () => {
     /* silent */
   }
   try {
-    summaryData.value = await dashboardApi.getSummary();
+    summaryData.value = await dashboardApi.getSummary(authStore.activeCabang);
   } catch {
     /* silent */
   } finally {
@@ -150,7 +153,7 @@ const chartBars = computed(() => {
           </div>
           <div class="info-pill">
             <IconLayoutDashboard :size="13" />
-            <span>{{ authStore.userCabang || "—" }}</span>
+            <span>{{ authStore.activeCabang || "—" }}</span>
           </div>
           <div class="info-pill">
             <IconCalendar :size="13" />
@@ -202,23 +205,53 @@ const chartBars = computed(() => {
         </v-card>
       </v-dialog>
 
-      <!-- ── Saldo Kas — hero card ── -->
-      <div class="saldo-hero" @click="router.push('/laporan/buku-besar')">
-        <div class="saldo-hero-left">
-          <div class="saldo-hero-label">
-            <IconBuildingBank :size="14" />
-            Saldo Kas — {{ summaryData.saldoKas?.account }}
+      <!-- ── Saldo Kas & Bank — dua hero card ── -->
+      <div class="saldo-hero-grid">
+        <div class="saldo-hero" @click="router.push('/laporan/buku-besar')">
+          <div class="saldo-hero-left">
+            <div class="saldo-hero-label">
+              <IconBuildingBank :size="14" />
+              Saldo Kas — {{ summaryData.saldo.kas.account }}
+            </div>
+            <div class="saldo-hero-val">
+              <span v-if="isSummaryLoading" class="saldo-loading"
+                >Memuat...</span
+              >
+              <span v-else>Rp {{ fmt(summaryData.saldo.kas.saldo) }}</span>
+            </div>
+            <div class="saldo-hero-sub">
+              {{ summaryData.saldo.kas.count }} account · Klik untuk lihat Buku
+              Besar
+            </div>
           </div>
-          <div class="saldo-hero-val">
-            <span v-if="isSummaryLoading" class="saldo-loading">Memuat...</span>
-            <span v-else>Rp {{ fmt(summaryData.saldoKas?.saldo ?? 0) }}</span>
-          </div>
-          <div class="saldo-hero-sub">
-            Per hari ini · Klik untuk lihat Buku Besar
+          <div class="saldo-hero-icon">
+            <IconBuildingBank :size="36" color="rgba(255,255,255,0.3)" />
           </div>
         </div>
-        <div class="saldo-hero-icon">
-          <IconBuildingBank :size="36" color="rgba(255,255,255,0.3)" />
+
+        <div
+          class="saldo-hero saldo-hero-bank"
+          @click="router.push('/laporan/buku-besar')"
+        >
+          <div class="saldo-hero-left">
+            <div class="saldo-hero-label">
+              <IconBuildingBank :size="14" />
+              Saldo Bank — {{ summaryData.saldo.bank.account }}
+            </div>
+            <div class="saldo-hero-val">
+              <span v-if="isSummaryLoading" class="saldo-loading"
+                >Memuat...</span
+              >
+              <span v-else>Rp {{ fmt(summaryData.saldo.bank.saldo) }}</span>
+            </div>
+            <div class="saldo-hero-sub">
+              {{ summaryData.saldo.bank.count }} account · Klik untuk lihat Buku
+              Besar
+            </div>
+          </div>
+          <div class="saldo-hero-icon">
+            <IconBuildingBank :size="36" color="rgba(255,255,255,0.3)" />
+          </div>
         </div>
       </div>
 
@@ -602,6 +635,23 @@ const chartBars = computed(() => {
 .saldo-hero-sub {
   font-size: 11px;
   color: rgba(255, 255, 255, 0.55);
+}
+.saldo-hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.saldo-hero-bank {
+  background: linear-gradient(135deg, #1565c0, #0d47a1);
+  box-shadow: 0 4px 16px rgba(21, 101, 192, 0.25);
+}
+
+@media (max-width: 768px) {
+  .saldo-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
 }
 
 /* ── Section title ── */

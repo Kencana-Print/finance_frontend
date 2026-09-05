@@ -27,6 +27,7 @@ import {
   IconArrowsExchange,
   IconTransfer,
   IconTruckDelivery,
+  IconMapPin,
 } from "@tabler/icons-vue";
 
 const router = useRouter();
@@ -80,6 +81,11 @@ const submitChangePassword = async () => {
 const logout = () => {
   authStore.logout();
   router.push("/login");
+};
+
+const switchCabang = (c: string) => {
+  authStore.setActiveCabang(c);
+  router.go(0); // reload halaman biar dashboard/laporan re-fetch pakai cabang baru
 };
 
 // Toggle hamburger — beda behavior mobile vs desktop
@@ -473,6 +479,29 @@ const toggleGroup = (title: string) => {
       </v-app-bar-title>
 
       <template #append>
+        <!-- ── Switch Cabang — hanya tampil kalau user punya lebih dari 1 cabang ── -->
+        <v-menu v-if="authStore.canSwitchCabang">
+          <template #activator="{ props }">
+            <button class="cabang-switch-btn" v-bind="props">
+              <IconMapPin :size="13" :stroke-width="1.8" />
+              {{ authStore.activeCabang }}
+              <IconChevronDown :size="12" />
+            </button>
+          </template>
+          <v-list density="compact" class="user-menu">
+            <v-list-item
+              v-for="c in authStore.cabangOptions"
+              :key="c"
+              @click="switchCabang(c)"
+              :active="c === authStore.activeCabang"
+            >
+              <v-list-item-title style="font-size: 12px">{{
+                c
+              }}</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-menu>
+
         <v-menu>
           <template #activator="{ props }">
             <div class="appbar-user-btn" v-bind="props">
@@ -799,6 +828,26 @@ const toggleGroup = (title: string) => {
   display: grid !important; /* Vuetify 3 defaultnya pakai grid, bukan flex */
   opacity: 1 !important;
   visibility: visible !important;
+}
+
+.cabang-switch-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid #c8e6c9;
+  border-radius: 16px;
+  background: #f1f8f1;
+  color: #2e7d32;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-right: 10px;
+  transition: background 0.15s;
+}
+.cabang-switch-btn:hover {
+  background: #e0f2e1;
 }
 
 /* ── Responsif DefaultLayout ── */
