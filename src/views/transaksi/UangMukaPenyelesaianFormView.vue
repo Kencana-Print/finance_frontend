@@ -552,13 +552,37 @@ const addRow = () => {
   });
 };
 
+const showRemoveRowDialog = ref(false);
+const rowToRemoveIdx = ref(-1);
+
 const removeRow = (idx: number) => {
   const d = form.value.detail[idx];
-  if (d.ga !== 0) {
-    toast.warning("Hanya record baru yang bisa dihapus.");
+  if (d.ga === 1 && d.edit === 1) {
+    toast.warning(
+      "Baris ini sudah pernah tersimpan di penyelesaian sebelumnya. Hapus/ubah ulang belum didukung.",
+    );
     return;
   }
+  if (d.ga === 1) {
+    rowToRemoveIdx.value = idx;
+    showRemoveRowDialog.value = true;
+    return;
+  }
+  // Baris manual (non-GA) — hapus langsung tanpa konfirmasi, sama seperti sebelumnya
   form.value.detail.splice(idx, 1);
+};
+
+const confirmRemoveRow = () => {
+  if (rowToRemoveIdx.value >= 0) {
+    form.value.detail.splice(rowToRemoveIdx.value, 1);
+  }
+  showRemoveRowDialog.value = false;
+  rowToRemoveIdx.value = -1;
+};
+
+const cancelRemoveRow = () => {
+  showRemoveRowDialog.value = false;
+  rowToRemoveIdx.value = -1;
 };
 
 // ── Validasi ──────────────────────────────────────────────────────────
@@ -690,6 +714,45 @@ const rowClass = (d: PenyelesaianDetail) => {
   if (!d.verified) return "row-unverified";
   if (d.verified && d.reknama === "") return "row-warn";
   return "";
+};
+
+const STATUS_FINANCE_OPTIONS = [
+  { value: "", label: "-" },
+  { value: "PENDING", label: "Pending" },
+  { value: "MENUNGGU_PEMBELIAN", label: "Menunggu Pembelian" },
+  { value: "BULAN_DEPAN", label: "Bulan Depan" },
+  { value: "OTORISASI", label: "Otorisasi" },
+];
+const statusFinanceColor = (v?: string) => {
+  switch (v) {
+    case "PENDING":
+      return { bg: "#fff3e0", fg: "#e65100" };
+    case "MENUNGGU_PEMBELIAN":
+      return { bg: "#e3f2fd", fg: "#1565c0" };
+    case "BULAN_DEPAN":
+      return { bg: "#f3e5f5", fg: "#7b1fa2" };
+    case "OTORISASI":
+      return { bg: "#fce4ec", fg: "#c2185b" };
+    default:
+      return { bg: "#f5f5f5", fg: "#9e9e9e" };
+  }
+};
+
+const updatingStatusIdx = ref<number | null>(null);
+const onStatusFinanceChange = async (d: PenyelesaianDetail, idx: number) => {
+  if (!d.pjh) return;
+  updatingStatusIdx.value = idx;
+  try {
+    await uangMukaPenyelesaianApi.updateStatusFinance(
+      d.pjh,
+      d.statusFinance || null,
+    );
+    toast.success("Status pengajuan diperbarui.");
+  } catch (e: any) {
+    toast.error(e.response?.data?.message ?? "Gagal update status.");
+  } finally {
+    updatingStatusIdx.value = null;
+  }
 };
 </script>
 
@@ -880,6 +943,7 @@ const rowClass = (d: PenyelesaianDetail) => {
                 <th style="width: 120px">Nominal Satuan</th>
                 <th style="width: 110px">Total</th>
                 <th style="width: 45px">Ver</th>
+                <th style="width: 130px">Status</th>
                 <th style="min-width: 130px">Account</th>
                 <th style="min-width: 240px">Nama Account</th>
                 <th style="min-width: 200px">Cost Center</th>
@@ -981,6 +1045,35 @@ const rowClass = (d: PenyelesaianDetail) => {
                     v-model="d.verified"
                     @change="onVerifiedChange(d)"
                   />
+                </td>
+
+                <!-- Status Pengajuan (khusus baris GA) -->
+                <td>
+                  <select
+                    v-if="d.ga === 1 && d.pjh"
+                    :value="d.statusFinance || ''"
+                    class="status-select"
+                    :disabled="updatingStatusIdx === idx"
+                    :style="{
+                      background: statusFinanceColor(d.statusFinance).bg,
+                      color: statusFinanceColor(d.statusFinance).fg,
+                    }"
+                    @change="
+                      d.statusFinance = (
+                        $event.target as HTMLSelectElement
+                      ).value;
+                      onStatusFinanceChange(d, idx);
+                    "
+                  >
+                    <option
+                      v-for="opt in STATUS_FINANCE_OPTIONS"
+                      :key="opt.value"
+                      :value="opt.value"
+                    >
+                      {{ opt.label }}
+                    </option>
+                  </select>
+                  <span v-else class="cell-text">-</span>
                 </td>
 
                 <!-- Account (rekkode) -->
@@ -1137,7 +1230,7 @@ const rowClass = (d: PenyelesaianDetail) => {
                 <!-- Hapus -->
                 <td class="tc">
                   <button
-                    v-if="d.ga === 0"
+                    v-if="d.ga === 0 || (d.ga === 1 && d.edit === 0)"
                     class="del-btn"
                     type="button"
                     @click.prevent="removeRow(idx)"
@@ -1147,7 +1240,7 @@ const rowClass = (d: PenyelesaianDetail) => {
                 </td>
               </tr>
               <tr v-if="!form.detail.length">
-                <td colspan="23" class="empty-td">Belum ada item.</td>
+                <td colspan="24" class="empty-td">Belum ada item.</td>
               </tr>
             </tbody>
           </table>
@@ -1185,6 +1278,33 @@ const rowClass = (d: PenyelesaianDetail) => {
       </div>
     </template>
   </BaseForm>
+
+  <!-- ── Dialog Konfirmasi Hapus Baris GA ── -->
+  <v-dialog v-model="showRemoveRowDialog" max-width="420" persistent>
+    <v-card rounded="lg">
+      <v-card-title
+        class="pa-4 pb-2"
+        style="font-size: 13px; font-weight: 700; border-top: 3px solid #f57c00"
+      >
+        Konfirmasi Hapus Baris
+      </v-card-title>
+      <v-card-text class="pa-4 pt-2" style="font-size: 12px">
+        Baris
+        <strong>{{
+          rowToRemoveIdx >= 0 ? form.detail[rowToRemoveIdx]?.uraian : ""
+        }}</strong>
+        akan dihapus dari transaksi ini dan tetap tersedia untuk diproses di
+        Uang Muka lain nanti. Lanjutkan?
+      </v-card-text>
+      <v-card-actions class="pa-3">
+        <v-btn variant="text" @click="cancelRemoveRow">Batal</v-btn>
+        <v-spacer />
+        <v-btn color="warning" variant="flat" @click="confirmRemoveRow">
+          Ya, Hapus
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 
   <!-- ── Dialog Info Permintaan ── -->
   <v-dialog v-model="showPermintaanDialog" max-width="420">
@@ -2075,5 +2195,20 @@ const rowClass = (d: PenyelesaianDetail) => {
 .ns-rek-tbl td {
   padding: 3px 4px;
   border-bottom: 1px solid #f0f0f0;
+}
+.status-select {
+  height: 22px;
+  border: none;
+  border-radius: 3px;
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  width: 100%;
+}
+.status-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>

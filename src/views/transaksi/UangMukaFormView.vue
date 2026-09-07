@@ -31,7 +31,6 @@ const isSaving = ref(false);
 const showSaveDialog = ref(false);
 const showCancelDialog = ref(false);
 const showCloseDialog = ref(false);
-const showPermintaanDialog = ref(false);
 
 const showPrintDialog = ref(false);
 const savedNomor = ref("");
@@ -95,9 +94,6 @@ const originalForm = ref<typeof initialFormData | null>(null);
 const accountOptions = ref<{ kode: string; nama: string; cabang: string }[]>(
   [],
 );
-const pengajuanOptions = ref<
-  { nomor: string; tanggal: string; keterangan: string }[]
->([]);
 
 const loadAccountOptions = async () => {
   try {
@@ -290,59 +286,6 @@ const onNominalFocus = (e: Event) => {
   (e.target as HTMLInputElement).value = form.value.nominal
     ? String(form.value.nominal)
     : "";
-};
-
-// ── Search Modal: Pengajuan ───────────────────────────────────────────
-const showPengajuanModal = ref(false);
-const searchPjh = ref("");
-const pjhLoading = ref(false);
-
-const openPengajuanModal = async () => {
-  pjhLoading.value = true;
-  showPengajuanModal.value = true;
-  try {
-    pengajuanOptions.value = await uangMukaFormApi.getPengajuanOptions(
-      form.value.cabang,
-    );
-  } catch {
-    toast.error("Gagal memuat data pengajuan.");
-  } finally {
-    pjhLoading.value = false;
-  }
-};
-
-const filteredPengajuan = computed(() => {
-  const q = searchPjh.value.toLowerCase();
-  return q
-    ? pengajuanOptions.value.filter(
-        (p) =>
-          p.nomor.toLowerCase().includes(q) ||
-          p.keterangan?.toLowerCase().includes(q),
-      )
-    : pengajuanOptions.value;
-});
-
-const selectPengajuan = async (pjh: any) => {
-  showPengajuanModal.value = false;
-  try {
-    const d = await uangMukaFormApi.getDetailPengajuan(pjh.nomor);
-    form.value.pjh_nomor = d.pmt_pjh_nomor ?? "";
-    form.value.pmt_nomor = d.pmt_nomor; // ← No Permintaan
-    form.value.pmt_tanggal = d.pmt_tanggal;
-    form.value.pjh_tanggal = d.pjh_tanggal;
-    form.value.pjh_nik = d.pjh_nik;
-    form.value.jenis_permintaan = d.jenis_permintaan;
-    form.value.nama = d.nama;
-    form.value.penerima = d.nama;
-    form.value.bagian = d.bagian;
-    form.value.lokasi = d.lokasi;
-    form.value.keterangan = d.keterangan;
-    form.value.detail = d.detail;
-
-    form.value.nominal = d.detail.reduce((sum, item) => sum + item.total, 0);
-  } catch (e: any) {
-    toast.error(e.response?.data?.message ?? "Gagal memuat pengajuan.");
-  }
 };
 
 // ── Search Modal: Account ─────────────────────────────────────────────
@@ -577,38 +520,6 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
             <input v-model="form.tanggal" type="date" class="form-inp" />
           </div>
 
-          <!-- Nomor Pengajuan -->
-          <div class="field-row">
-            <label class="field-lbl">Nomor Pengajuan</label>
-            <div class="input-with-btn">
-              <input
-                v-model="form.pjh_nomor"
-                :readonly="isEdit"
-                class="form-inp"
-                placeholder="Nomor pengajuan"
-              />
-              <button
-                v-if="!isEdit"
-                class="icon-btn"
-                @click="openPengajuanModal"
-                type="button"
-              >
-                <IconSearch :size="13" :stroke-width="1.8" />
-              </button>
-            </div>
-          </div>
-
-          <!-- Tgl Pengajuan -->
-          <div class="field-row">
-            <label class="field-lbl">Tgl Pengajuan</label>
-            <input
-              v-model="form.pjh_tanggal"
-              type="date"
-              class="form-inp"
-              readonly
-            />
-          </div>
-
           <!-- Penerima -->
           <div class="field-row">
             <label class="field-lbl">Penerima <span class="req">*</span></label>
@@ -638,28 +549,6 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
               placeholder="Keterangan"
             />
           </div>
-        </div>
-
-        <!-- Info Permintaan -->
-        <div class="form-section">
-          <div class="form-section-header">
-            <div class="form-section-title" style="margin-bottom: 0">
-              Info Permintaan
-            </div>
-            <button
-              class="link-btn"
-              @click="showPermintaanDialog = true"
-              :disabled="!form.pmt_nomor"
-              type="button"
-            >
-              Lihat Detail
-            </button>
-          </div>
-          <div v-if="form.pmt_nomor" class="pmt-info">
-            <span class="pmt-nomor">{{ form.pmt_nomor }}</span>
-            <span class="pmt-nama">{{ form.nama }}</span>
-          </div>
-          <div v-else class="pmt-empty">Belum ada permintaan dipilih</div>
         </div>
       </div>
     </template>
@@ -869,41 +758,6 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
     </template>
   </BaseForm>
 
-  <v-dialog v-model="showPermintaanDialog" max-width="420">
-    <v-card rounded="lg">
-      <v-card-title
-        class="pa-4 pb-2"
-        style="font-size: 13px; font-weight: 700; border-top: 3px solid #2e7d32"
-      >
-        Info Permintaan
-      </v-card-title>
-      <v-card-text class="pa-4 pt-2">
-        <div class="info-grid">
-          <span class="info-lbl">No. Permintaan</span>
-          <span class="info-val">{{ form.pmt_nomor || "-" }}</span>
-          <span class="info-lbl">Tgl Permintaan</span>
-          <span class="info-val">{{ form.pmt_tanggal || "-" }}</span>
-          <span class="info-lbl">Jenis Permintaan</span>
-          <span class="info-val">{{ form.jenis_permintaan || "-" }}</span>
-          <span class="info-lbl">NIK</span>
-          <span class="info-val">{{ form.pjh_nik || "-" }}</span>
-          <span class="info-lbl">Nama</span>
-          <span class="info-val">{{ form.nama || "-" }}</span>
-          <span class="info-lbl">Bagian</span>
-          <span class="info-val">{{ form.bagian || "-" }}</span>
-          <span class="info-lbl">Lokasi</span>
-          <span class="info-val">{{ form.lokasi || "-" }}</span>
-        </div>
-      </v-card-text>
-      <v-card-actions class="pa-3">
-        <v-spacer />
-        <v-btn variant="text" @click="showPermintaanDialog = false"
-          >Tutup</v-btn
-        >
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
-
   <v-dialog v-model="showPrintDialog" max-width="380" persistent>
     <v-card rounded="lg">
       <v-card-title
@@ -935,22 +789,6 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
       </v-card-actions>
     </v-card>
   </v-dialog>
-
-  <!-- ── Modal: Cari Pengajuan ── -->
-  <SearchModal
-    v-model="showPengajuanModal"
-    title="Cari Nomor Pengajuan"
-    :columns="[
-      { key: 'nomor', title: 'Nomor', width: '150px' },
-      { key: 'tanggal', title: 'Tanggal', width: '100px' },
-      { key: 'keterangan', title: 'Keterangan' },
-    ]"
-    :items="pengajuanOptions"
-    :loading="pjhLoading"
-    search-placeholder="Cari nomor atau keterangan..."
-    :search-keys="['nomor', 'keterangan']"
-    @select="selectPengajuan"
-  />
 
   <!-- ── Modal: Cari Account ── -->
   <SearchModal

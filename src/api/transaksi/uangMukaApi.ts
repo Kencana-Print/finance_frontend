@@ -15,6 +15,7 @@ export interface UangMuka {
   NoBukti: string;
   Selesai: "Belum" | "Sudah";
   Closed: "Belum" | "Sudah";
+  StatusFinance: string | null;
 }
 
 export const uangMukaApi = {
@@ -38,4 +39,9 @@ export const uangMukaApi = {
     );
     return data;
   },
+  updateStatusFinance: (nomor: string, status: string | null) =>
+    api.patch(
+      `/transaksi/uang-muka/${encodeURIComponent(nomor)}/status-finance`,
+      { status },
+    ),
 };

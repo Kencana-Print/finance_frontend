@@ -81,6 +81,7 @@ const {
 const headers = [
   { title: "Nomor", key: "Nomor", minWidth: "130px" },
   { title: "Tanggal", key: "Tanggal", width: "100px", align: "center" },
+  { title: "Status", key: "StatusFinance", width: "150px", align: "center" },
   { title: "Jenis", key: "Jenis", width: "70px", align: "center" },
   { title: "Account", key: "NamaAccount", minWidth: "180px" },
   { title: "PJH", key: "Pjh", minWidth: "120px" },
@@ -164,6 +165,48 @@ const onCetakSelesai = () => {
     `/transaksi/uang-muka/print-selesai/${encodeURIComponent(item.Nomor)}`,
     "_blank",
   );
+};
+
+const STATUS_OPTIONS = [
+  { value: "", label: "-" },
+  { value: "PENDING", label: "Pending" },
+  { value: "MENUNGGU_PEMBELIAN", label: "Menunggu Pembelian" },
+  { value: "BULAN_DEPAN", label: "Bulan Depan" },
+  { value: "OTORISASI", label: "Otorisasi" },
+];
+const statusLabel = (v: string) =>
+  STATUS_OPTIONS.find((s) => s.value === v)?.label || "-";
+const statusColor = (v: string) => {
+  switch (v) {
+    case "PENDING":
+      return { bg: "#fff3e0", fg: "#e65100" };
+    case "MENUNGGU_PEMBELIAN":
+      return { bg: "#e3f2fd", fg: "#1565c0" };
+    case "BULAN_DEPAN":
+      return { bg: "#f3e5f5", fg: "#7b1fa2" };
+    case "OTORISASI":
+      return { bg: "#fce4ec", fg: "#c2185b" };
+    default:
+      return { bg: "#f5f5f5", fg: "#9e9e9e" };
+  }
+};
+
+const updatingStatus = ref<string | null>(null);
+const onStatusChange = async (item: UangMuka, newStatus: string) => {
+  if (!item.Pjh) {
+    toast.warning("Kasbon ini tidak terhubung ke pengajuan GA.");
+    return;
+  }
+  updatingStatus.value = item.Nomor;
+  try {
+    await uangMukaApi.updateStatusFinance(item.Nomor, newStatus || null);
+    item.StatusFinance = newStatus || null;
+    toast.success("Status diperbarui.");
+  } catch (e: any) {
+    toast.error(e.response?.data?.message ?? "Gagal update status.");
+  } finally {
+    updatingStatus.value = null;
+  }
 };
 
 const isPendingFilter = computed(() => route.query.filter === "pending");
@@ -310,6 +353,36 @@ onMounted(() => {
         >{{ item.Selesai }}</span
       >
     </template>
+    <template #item.StatusFinance="{ item }">
+      <select
+        :value="item.StatusFinance || ''"
+        class="status-select"
+        :disabled="
+          !item.Pjh || item.Selesai === 'Sudah' || updatingStatus === item.Nomor
+        "
+        :title="
+          item.Selesai === 'Sudah'
+            ? 'Sudah ada penyelesaian, status terkunci'
+            : ''
+        "
+        :style="{
+          background: statusColor(item.StatusFinance).bg,
+          color: statusColor(item.StatusFinance).fg,
+        }"
+        @change="
+          onStatusChange(item, ($event.target as HTMLSelectElement).value)
+        "
+        @click.stop
+      >
+        <option
+          v-for="opt in STATUS_OPTIONS"
+          :key="opt.value"
+          :value="opt.value"
+        >
+          {{ opt.label }}
+        </option>
+      </select>
+    </template>
     <template #item.Closed="{ item }">
       <span
         :style="{
@@ -371,5 +444,20 @@ onMounted(() => {
 }
 .pending-badge:hover {
   background: #ffcdd2;
+}
+.status-select {
+  height: 24px;
+  border: none;
+  border-radius: 4px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  width: 100%;
+}
+.status-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>

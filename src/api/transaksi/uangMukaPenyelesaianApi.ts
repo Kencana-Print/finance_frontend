@@ -30,6 +30,7 @@ export interface PenyelesaianDetail {
   mb: string;
   jenis_item: string;
   cab_item: string;
+  statusFinance?: string;
 }
 
 export interface PenyelesaianForm {
@@ -120,6 +121,12 @@ export const uangMukaPenyelesaianApi = {
     );
     return data.data as PenyelesaianDetail[];
   },
+
+  updateStatusFinance: (pjhNomor: string, status: string | null) =>
+    api.patch(
+      `/transaksi/uang-muka/selesai/pengajuan/${encodeURIComponent(pjhNomor)}/status-finance`,
+      { status },
+    ),
 
   getListPoExternal: async () => {
     const { data } = await api.get("/transaksi/uang-muka/selesai/po-external");
