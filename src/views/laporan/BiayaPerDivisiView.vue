@@ -134,7 +134,7 @@ const hasData = computed(() => (reportData.value?.akunList.length ?? 0) > 0);
         >
           <option value="">— Pilih Divisi —</option>
           <option v-for="d in divisiOptions" :key="d.kode" :value="d.kode">
-            {{ d.nama }}
+            [{{ d.kode }}] {{ d.nama }}
           </option>
         </select>
       </div>
