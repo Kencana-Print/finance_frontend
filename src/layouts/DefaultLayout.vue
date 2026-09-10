@@ -28,6 +28,7 @@ import {
   IconTransfer,
   IconTruckDelivery,
   IconMapPin,
+  IconFileText,
 } from "@tabler/icons-vue";
 
 const router = useRouter();
@@ -304,6 +305,12 @@ const menus = [
         title: "Daftar Hutang",
         icon: IconList,
         route: "/laporan/daftar-hutang",
+        menuId: null,
+      },
+      {
+        title: "Biaya per Divisi",
+        icon: IconFileText,
+        route: "/laporan/biaya-per-divisi",
         menuId: null,
       },
     ],

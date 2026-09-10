@@ -8,6 +8,7 @@ import type {
   DaftarHutangRow,
   DaftarHutangDetail,
 } from "@/api/laporan/daftarHutangApi";
+import type { BiayaPerDivisiData } from "@/api/laporan/biayaPerDivisiApi";
 
 // --- Master Data Export ---
 export const exportCostCenter = async (
@@ -4602,5 +4603,135 @@ export const exportDaftarHutangDetail = async (
   saveAs(
     new Blob([buf]),
     `DaftarHutang_Detail_${startDate}_sd_${endDate}.xlsx`,
+  );
+};
+
+export const exportBiayaPerDivisi = async (
+  data: BiayaPerDivisiData,
+  startDate: string,
+  endDate: string,
+) => {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Biaya per Divisi");
+
+  const borderAll: Partial<ExcelJS.Borders> = {
+    top: { style: "thin" },
+    left: { style: "thin" },
+    bottom: { style: "thin" },
+    right: { style: "thin" },
+  };
+  const headerFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF2E7D32" },
+  };
+  const akunFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFE8F5E9" },
+  };
+  const totalFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFC8E6C9" },
+  };
+
+  const setH = (cell: ExcelJS.Cell, val: string) => {
+    cell.value = val;
+    cell.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
+    cell.fill = headerFill;
+    cell.border = borderAll;
+    cell.alignment = {
+      vertical: "middle",
+      horizontal: "center",
+      wrapText: true,
+    };
+  };
+  const setC = (
+    cell: ExcelJS.Cell,
+    val: any,
+    align: "left" | "center" | "right" = "left",
+    bold = false,
+  ) => {
+    cell.value = val;
+    cell.border = borderAll;
+    cell.font = { size: 10, bold };
+    cell.alignment = { vertical: "middle", horizontal: align };
+  };
+  const setN = (cell: ExcelJS.Cell, val: number, bold = false) => {
+    cell.value = Number(val) || 0;
+    cell.border = borderAll;
+    cell.font = { size: 10, bold };
+    cell.numFmt = "#,##0";
+    cell.alignment = { vertical: "middle", horizontal: "right" };
+  };
+
+  ws.mergeCells("A1:G1");
+  ws.getCell("A1").value = `Laporan Biaya per Divisi — ${data.divisi.nama}`;
+  ws.getCell("A1").font = { bold: true, size: 12 };
+  ws.mergeCells("A2:G2");
+  ws.getCell("A2").value = `Periode : ${startDate} s/d ${endDate}`;
+  ws.getCell("A2").font = { size: 10 };
+  ws.addRow([]);
+
+  const cols = [
+    "Akun Biaya",
+    "No. Pengajuan",
+    "Tanggal",
+    "No. BKK/BBK",
+    "Tanggal",
+    "Detail CC",
+    "Nominal",
+  ];
+  const hRow = ws.addRow(cols);
+  hRow.eachCell((cell, i) => setH(cell, cols[i - 1]));
+  hRow.height = 20;
+
+  for (const akun of data.akunList) {
+    const akunRow = ws.addRow([]);
+    setC(akunRow.getCell(1), akun.namaAkun, "left", true);
+    for (let c = 2; c <= 6; c++) {
+      akunRow.getCell(c).fill = akunFill;
+      akunRow.getCell(c).border = borderAll;
+    }
+    akunRow.getCell(1).fill = akunFill;
+    setN(akunRow.getCell(7), akun.totalNominal, true);
+    akunRow.getCell(7).fill = akunFill;
+    akunRow.height = 18;
+
+    for (const d of akun.detail) {
+      const row = ws.addRow([]);
+      setC(row.getCell(1), "Detail Biaya Realisasi Pengajuan");
+      setC(row.getCell(2), d.noPengajuan || "-");
+      setC(row.getCell(3), d.tanggalPengajuan, "center");
+      setC(row.getCell(4), d.noBkkBbk);
+      setC(row.getCell(5), d.tanggalBkkBbk, "center");
+      setC(row.getCell(6), d.detailCC || "-");
+      setN(row.getCell(7), d.nominal);
+      row.height = 16;
+    }
+  }
+
+  const footRow = ws.addRow([]);
+  for (let c = 1; c <= 7; c++) {
+    footRow.getCell(c).border = borderAll;
+    footRow.getCell(c).fill = totalFill;
+  }
+  setC(footRow.getCell(6), "GRAND TOTAL", "right", true);
+  setN(footRow.getCell(7), data.grandTotal, true);
+  footRow.height = 20;
+
+  ws.getColumn(1).width = 32;
+  ws.getColumn(2).width = 16;
+  ws.getColumn(3).width = 12;
+  ws.getColumn(4).width = 18;
+  ws.getColumn(5).width = 12;
+  ws.getColumn(6).width = 18;
+  ws.getColumn(7).width = 16;
+
+  const buf = await wb.xlsx.writeBuffer();
+  saveAs(
+    new Blob([buf]),
+    `Biaya_${data.divisi.nama.replace(/\s+/g, "_")}_${startDate}_sd_${endDate}.xlsx`,
   );
 };

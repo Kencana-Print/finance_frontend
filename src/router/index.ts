@@ -681,6 +681,16 @@ const router = createRouter({
         title: "Daftar Hutang",
       },
     },
+    {
+      path: "/laporan/biaya-per-divisi",
+      name: "LapBiayaPerDivisi",
+      component: () => import("@/views/laporan/BiayaPerDivisiView.vue"),
+      meta: {
+        layout: "DefaultLayout",
+        requiresAuth: true,
+        title: "Biaya per Divisi",
+      },
+    },
 
     // ── Tools ─────────────────────────────────────────────────────────
     {
