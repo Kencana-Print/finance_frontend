@@ -81,7 +81,7 @@ const {
 const headers = [
   { title: "Nomor", key: "Nomor", minWidth: "130px" },
   { title: "Tanggal", key: "Tanggal", width: "100px", align: "center" },
-  { title: "Status", key: "StatusFinance", width: "150px", align: "center" },
+  // { title: "Status", key: "StatusFinance", width: "150px", align: "center" },
   { title: "Jenis", key: "Jenis", width: "70px", align: "center" },
   { title: "Account", key: "NamaAccount", minWidth: "180px" },
   { title: "PJH", key: "Pjh", minWidth: "120px" },
