@@ -16,6 +16,8 @@ export interface UangMuka {
   Selesai: "Belum" | "Sudah";
   Closed: "Belum" | "Sudah";
   StatusFinance: string | null;
+  TanggalDibuat: string | null;
+  UserDibuat: string | null;
 }
 
 export const uangMukaApi = {

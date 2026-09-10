@@ -94,6 +94,13 @@ const headers = [
   { title: "No Bukti", key: "NoBukti", minWidth: "120px" },
   { title: "Selesai", key: "Selesai", width: "90px", align: "center" },
   { title: "Closed", key: "Closed", width: "85px", align: "center" },
+  { title: "Dibuat Oleh", key: "UserDibuat", width: "110px", align: "center" },
+  {
+    title: "Tgl Dibuat",
+    key: "TanggalDibuat",
+    width: "140px",
+    align: "center",
+  },
 ];
 
 // ── Row color — Belum = pink seperti Delphi ────────────────────────
@@ -109,6 +116,12 @@ const fmtDate = (v: string) => {
   if (!v) return "";
   const [y, m, d] = v.split("-");
   return `${d}-${m}-${y}`;
+};
+const fmtDateTime = (v: string) => {
+  if (!v) return "";
+  const [datePart, timePart] = v.split(" ");
+  const [y, m, d] = datePart.split("-");
+  return `${d}-${m}-${y} ${timePart?.slice(0, 5) ?? ""}`;
 };
 
 // ── Aksi ─────────────────────────────────────────────────────────────
@@ -328,6 +341,9 @@ onMounted(() => {
 
     <!-- Format kolom -->
     <template #item.Tanggal="{ item }">{{ fmtDate(item.Tanggal) }}</template>
+    <template #item.TanggalDibuat="{ item }">{{
+      fmtDateTime(item.TanggalDibuat)
+    }}</template>
     <template #item.Nominal="{ item }">{{ fmt2(item.Nominal) }}</template>
     <template #item.Terpakai="{ item }">{{ fmt2(item.Terpakai) }}</template>
     <template #item.Sisa="{ item }">
