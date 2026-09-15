@@ -484,6 +484,22 @@ const addRow = () => {
   });
 };
 
+const focusFirstEditable = (rowIdx: number) => {
+  const selector = `tr[data-row-idx="${rowIdx}"] input.cell-inp:not([readonly]), tr[data-row-idx="${rowIdx}"] textarea.cell-inp:not([readonly])`;
+  const el = document.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+    selector,
+  );
+  el?.focus();
+};
+
+const handleRowEnter = async (e: KeyboardEvent, idx: number) => {
+  if (idx !== form.value.detail.length - 1) return;
+  e.preventDefault();
+  addRow();
+  await nextTick();
+  focusFirstEditable(idx + 1);
+};
+
 const removeRow = (idx: number) => {
   const d = form.value.detail[idx];
   // Delphi: jika sudah realisasi tidak bisa hapus
@@ -768,20 +784,20 @@ const confirmClose = () => {
             <thead>
               <tr>
                 <th style="width: 35px">No</th>
-                <th style="width: 90px">Kode Sup</th>
-                <th style="min-width: 200px">Nama Supplier</th>
-                <th style="width: 90px">Bank</th>
-                <th style="min-width: 140px">Atas Nama</th>
-                <th style="min-width: 130px">Rekening Tujuan</th>
-                <th style="min-width: 140px">No. Transaksi</th>
-                <th style="width: 120px">Nominal</th>
-                <th style="min-width: 160px">Keterangan</th>
+                <th style="width: 120px">Kode Sup</th>
+                <th style="width: 320px">Nama Supplier</th>
+                <th style="width: 80px">Bank</th>
+                <th style="width: 220px">Atas Nama</th>
+                <th style="width: 140px">Rekening Tujuan</th>
+                <th style="width: 130px">No. Transaksi</th>
+                <th style="width: 110px">Nominal</th>
+                <th style="width: 220px">Keterangan</th>
                 <th style="width: 100px">Tgl Realisasi</th>
-                <th style="min-width: 110px">Account</th>
-                <th style="min-width: 200px">Nama Account</th>
-                <th style="min-width: 180px">Cost Center</th>
-                <th style="min-width: 180px">Detail CC</th>
-                <th style="min-width: 140px">Ket Batal</th>
+                <th style="width: 110px">Account</th>
+                <th style="width: 220px">Nama Account</th>
+                <th style="width: 180px">Cost Center</th>
+                <th style="width: 180px">Detail CC</th>
+                <th style="width: 120px">Ket Batal</th>
                 <th style="width: 28px"></th>
               </tr>
             </thead>
@@ -789,6 +805,8 @@ const confirmClose = () => {
               <tr
                 v-for="(d, idx) in form.detail"
                 :key="idx"
+                :data-row-idx="idx"
+                @keydown.enter="handleRowEnter($event, idx)"
                 :style="
                   d.batal
                     ? 'color:#cc0000'
@@ -806,7 +824,7 @@ const confirmClose = () => {
                       v-model="d.kode"
                       class="cell-inp"
                       :readonly="!!d.jurnal || isRealisasi"
-                      style="max-width: 55px"
+                      style="max-width: 85px"
                       @blur="
                         d.kode &&
                         !d.jurnal &&
@@ -829,14 +847,7 @@ const confirmClose = () => {
 
                 <!-- Nama Supplier -->
                 <td>
-                  <span
-                    class="cell-text"
-                    style="
-                      min-width: 160px;
-                      display: block;
-                      white-space: nowrap;
-                    "
-                  >
+                  <span class="cell-text cell-text-nowrap">
                     {{ d.nama || "-" }}
                   </span>
                 </td>
@@ -856,6 +867,7 @@ const confirmClose = () => {
                     v-model="d.atasnama"
                     class="cell-inp"
                     :readonly="!!d.jurnal || isRealisasi"
+                    :title="d.atasnama"
                   />
                 </td>
 
@@ -955,6 +967,7 @@ const confirmClose = () => {
                     v-model="d.ket"
                     class="cell-inp"
                     :readonly="!!d.batal"
+                    :title="d.ket"
                   />
                 </td>
 
@@ -1004,14 +1017,7 @@ const confirmClose = () => {
 
                 <!-- Nama Account -->
                 <td>
-                  <span
-                    class="cell-text"
-                    style="
-                      min-width: 160px;
-                      display: block;
-                      white-space: nowrap;
-                    "
-                  >
+                  <span class="cell-text cell-text-nowrap">
                     {{ d.reknama || "-" }}
                   </span>
                 </td>
@@ -2168,6 +2174,8 @@ const confirmClose = () => {
 }
 .detail-table {
   width: 100%;
+  min-width: 2400px;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 11px;
 }
@@ -2182,9 +2190,15 @@ const confirmClose = () => {
   text-align: left;
 }
 .detail-table td {
-  padding: 2px 3px;
+  padding: 3px 4px;
   border-bottom: 1px solid #f0f0f0;
   vertical-align: middle;
+}
+.cell-text-nowrap {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 2px 3px;
 }
 .detail-table tbody tr:hover td {
   background: rgba(46, 125, 50, 0.04);
@@ -2215,6 +2229,16 @@ const confirmClose = () => {
   font-size: 11px;
   outline: none;
   background: white;
+}
+.cell-textarea {
+  resize: none;
+  overflow: hidden;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.3;
+  min-height: 24px;
+  font-family: inherit;
+  display: block;
 }
 .cell-inp:focus {
   border-color: #2e7d32;

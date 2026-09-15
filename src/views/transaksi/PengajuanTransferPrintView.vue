@@ -85,14 +85,14 @@ const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
     <table class="detail-tbl">
       <thead>
         <tr>
-          <th style="width: 28px">No</th>
-          <th style="min-width: 160px">Nama Supplier</th>
-          <th style="width: 80px">Nama Bank</th>
-          <th style="min-width: 130px">Atas Nama</th>
-          <th style="width: 110px">No Rekening</th>
-          <th style="width: 100px">Nominal</th>
-          <th style="min-width: 180px">Keterangan</th>
-          <th style="width: 90px">Tgl Realisasi</th>
+          <th style="width: 24px">No</th>
+          <th>Nama Supplier</th>
+          <th>Nama Bank</th>
+          <th>Atas Nama</th>
+          <th>No Rekening</th>
+          <th>Nominal</th>
+          <th>Keterangan</th>
+          <th>Tgl Realisasi</th>
         </tr>
       </thead>
       <tbody>
@@ -160,6 +160,7 @@ body {
   color: #000;
   background: white;
   box-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
+  overflow-x: auto;
 }
 
 /* Header */
@@ -202,31 +203,29 @@ body {
 .detail-tbl {
   width: 100%;
   border-collapse: collapse;
-  font-size: 9pt;
+  font-size: 7.5pt;
   margin-top: 8px;
 }
 .detail-tbl thead th {
   border: 1px solid #000;
-  padding: 4px 5px;
+  padding: 3px 5px;
   text-align: left;
   font-weight: 700;
   background: #f0f0f0;
   white-space: nowrap;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 .detail-tbl tbody td {
   border: 1px solid #000;
-  padding: 3px 5px;
-  vertical-align: top;
+  padding: 2px 5px;
+  vertical-align: middle;
+  white-space: nowrap;
 }
 .detail-tbl tfoot td {
   border: 1px solid #000;
-  padding: 4px 5px;
-}
-.total-row .total-label {
-  font-weight: 700;
-}
-.total-row .total-val {
-  font-weight: 700;
+  padding: 3px 5px;
+  white-space: nowrap;
 }
 
 .tc {
@@ -264,7 +263,7 @@ body {
 @media print {
   @page {
     size: A4 landscape;
-    margin: 10mm 12mm;
+    margin: 8mm 12mm;
   }
   body {
     margin: 0;
@@ -272,12 +271,24 @@ body {
     background: white;
   }
   .print-page {
-    /* Biarkan browser yang handle ukuran halaman */
     width: 100%;
+    min-height: calc(
+      210mm - 16mm
+    ); /* tinggi A4 landscape dikurangi margin atas+bawah */
     margin: 0;
     padding: 0;
     box-shadow: none;
-    /* Jangan paksa min-height — biar tidak ada halaman kosong */
+    background: white;
+  }
+  .print-page,
+  .detail-tbl,
+  .ttd-wrap {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }
 </style>
