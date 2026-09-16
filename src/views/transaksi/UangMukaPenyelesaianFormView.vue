@@ -17,6 +17,7 @@ import {
 } from "@/api/transaksi/uangMukaPenyelesaianApi";
 import { uangMukaFormApi } from "@/api/transaksi/uangMukaFormApi";
 import { bbkFormApi } from "@/api/transaksi/bbkFormApi";
+import { useResizableColumns } from "@/composables/useResizableColumns";
 
 const route = useRoute();
 const router = useRouter();
@@ -73,6 +74,39 @@ const form = ref({
   info_permintaan: null as any,
   detail: [] as PenyelesaianDetail[],
 });
+
+const {
+  widths: colWidths,
+  startResize,
+  setColRef,
+} = useResizableColumns("col-widths-uang-muka-penyelesaian");
+
+const columns = [
+  { key: "no", label: "Kode", width: 35 },
+  { key: "pjh", label: "No.Pengajuan", width: 120 },
+  { key: "uraian", label: "Uraian", width: 150 },
+  { key: "spesifikasi", label: "Spesifikasi", width: 90 },
+  { key: "satuan", label: "Satuan", width: 55 },
+  { key: "qty", label: "Qty", width: 80 },
+  { key: "harga", label: "Nominal Satuan", width: 120 },
+  { key: "total", label: "Total", width: 110 },
+  { key: "verified", label: "Ver", width: 45 },
+  { key: "status", label: "Status", width: 130 },
+  { key: "rekkode", label: "Account", width: 130 },
+  { key: "reknama", label: "Nama Account", width: 240 },
+  { key: "cc", label: "Cost Center", width: 200 },
+  { key: "dc", label: "Detail CC", width: 200 },
+  { key: "guna", label: "Kegunaan", width: 80 },
+  { key: "kdsup", label: "Kd.Sup", width: 70 },
+  { key: "supplier", label: "Supplier", width: 100 },
+  { key: "bank", label: "Bank", width: 90 },
+  { key: "rekening", label: "Rekening", width: 110 },
+  { key: "atasnama", label: "Atas Nama", width: 100 },
+  { key: "jenis_item", label: "Jenis", width: 60 },
+  { key: "cab_item", label: "Cab", width: 55 },
+  { key: "kdbrg", label: "Kd.Brg", width: 80 },
+  { key: "aksi", label: "", width: 28 },
+];
 
 // ── Lookup ─────────────────────────────────────────────────────────────
 const accountOptions = ref<{ kode: string; nama: string; cabang: string }[]>(
@@ -932,32 +966,26 @@ const onStatusFinanceChange = async (d: PenyelesaianDetail, idx: number) => {
 
         <div class="detail-table-wrap">
           <table class="detail-table">
+            <colgroup>
+              <col
+                v-for="c in columns"
+                :key="c.key"
+                :ref="(el: any) => setColRef(c.key, el)"
+                :style="{ width: (colWidths[c.key] ?? c.width) + 'px' }"
+              />
+            </colgroup>
             <thead>
               <tr>
-                <th style="width: 35px">Kode</th>
-                <th style="min-width: 120px">No.Pengajuan</th>
-                <th style="min-width: 150px">Uraian</th>
-                <th style="min-width: 90px">Spesifikasi</th>
-                <th style="width: 55px">Satuan</th>
-                <th style="width: 80px">Qty</th>
-                <th style="width: 120px">Nominal Satuan</th>
-                <th style="width: 110px">Total</th>
-                <th style="width: 45px">Ver</th>
-                <th style="width: 130px">Status</th>
-                <th style="min-width: 130px">Account</th>
-                <th style="min-width: 240px">Nama Account</th>
-                <th style="min-width: 200px">Cost Center</th>
-                <th style="min-width: 200px">Detail CC</th>
-                <th style="min-width: 80px">Kegunaan</th>
-                <th style="width: 70px">Kd.Sup</th>
-                <th style="min-width: 100px">Supplier</th>
-                <th style="min-width: 90px">Bank</th>
-                <th style="min-width: 110px">Rekening</th>
-                <th style="min-width: 100px">Atas Nama</th>
-                <th style="width: 60px">Jenis</th>
-                <th style="width: 55px">Cab</th>
-                <th style="min-width: 80px">Kd.Brg</th>
-                <th style="width: 28px"></th>
+                <th v-for="c in columns" :key="c.key">
+                  {{ c.label }}
+                  <span
+                    v-if="c.key !== 'aksi'"
+                    class="col-resizer"
+                    @mousedown="
+                      startResize(c.key, $event, colWidths[c.key] ?? c.width)
+                    "
+                  />
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -1978,6 +2006,22 @@ const onStatusFinanceChange = async (d: PenyelesaianDetail, idx: number) => {
 }
 .row-warn td {
   background: #fff3e0 !important;
+}
+.detail-table th {
+  position: relative;
+}
+.col-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 5px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+}
+.col-resizer:hover,
+.col-resizer:active {
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .cell-inp {

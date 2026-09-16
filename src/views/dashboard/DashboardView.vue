@@ -43,13 +43,15 @@ const canViewBkk = computed(() => authStore.can("22", "view"));
 const canViewJurnal = computed(() => authStore.can("26", "view"));
 const canViewVoucher = computed(() => authStore.can("30", "view"));
 
-const fmt = (v: number) => new Intl.NumberFormat("id-ID").format(v);
+const fmt = (v: number) =>
+  new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(
+    Math.round(v),
+  );
 const fmtCompact = (v: number) => {
-  if (Math.abs(v) >= 1_000_000_000)
-    return `${(v / 1_000_000_000).toFixed(1)} M`;
-  if (Math.abs(v) >= 1_000_000) return `${(v / 1_000_000).toFixed(1)} Jt`;
-  if (Math.abs(v) >= 1_000) return `${(v / 1_000).toFixed(0)} Rb`;
-  return String(v);
+  if (Math.abs(v) >= 1_000_000_000) return `${Math.round(v / 1_000_000_000)} M`;
+  if (Math.abs(v) >= 1_000_000) return `${Math.round(v / 1_000_000)} Jt`;
+  if (Math.abs(v) >= 1_000) return `${Math.round(v / 1_000)} Rb`;
+  return String(Math.round(v));
 };
 
 const showChangelog = ref(false);
