@@ -17,7 +17,13 @@ import {
   uangMukaPenyelesaianApi,
   type PenyelesaianDetail,
 } from "@/api/transaksi/uangMukaPenyelesaianApi";
-import { bkkFormApi, type BkkFormDetail } from "@/api/transaksi/bkkFormApi";
+import {
+  bkkFormApi,
+  type BkkFormDetail,
+  type PettyCashOption,
+  type SupplierOption,
+  type SupplierDetailOption,
+} from "@/api/transaksi/bkkFormApi";
 
 const route = useRoute();
 const router = useRouter();
@@ -83,7 +89,7 @@ const parseNum = (v: string) =>
 const formatNum = (v: number) => new Intl.NumberFormat("id-ID").format(v || 0);
 
 const onHargaInput = (d: BkkFormDetail, e: Event) => {
-  d.harga = Math.max(0,parseNum((e.target as HTMLInputElement).value));
+  d.harga = Math.max(0, parseNum((e.target as HTMLInputElement).value));
   hitungTotal(d);
 };
 const onHargaBlur = (d: BkkFormDetail, e: Event) => {
@@ -94,7 +100,7 @@ const onHargaFocus = (d: BkkFormDetail, e: Event) => {
 };
 
 const onQtyInput = (d: BkkFormDetail, e: Event) => {
-  d.qty = Math.max(0,parseNum((e.target as HTMLInputElement).value));
+  d.qty = Math.max(0, parseNum((e.target as HTMLInputElement).value));
   hitungTotal(d);
 };
 
@@ -104,7 +110,6 @@ const onQtyBlur = (d: BkkFormDetail, e: Event) => {
 const onQtyFocus = (d: BkkFormDetail, e: Event) => {
   (e.target as HTMLInputElement).value = d.qty ? String(d.qty) : "";
 };
-
 
 // const onNominalInput = (d: BkkFormDetail, e: Event) => {
 //   d.total = parseNum((e.target as HTMLInputElement).value);
@@ -233,6 +238,83 @@ const selectDc = (dc: any) => {
   showDcModal.value = false;
 };
 
+// ── Petty Cash ────────────────────────────────────────────────────────
+const showModalPck = ref(false);
+const activePckIdx = ref(-1);
+const optPck = ref<PettyCashOption[]>([]);
+
+const cekDuplikatPck = (nomor: string) =>
+  form.value.detail.some((d) => d.pck === nomor);
+
+const selectPck = (item: PettyCashOption) => {
+  if (cekDuplikatPck(item.nomor)) {
+    toast.warning("Nomor petty cash tsb sudah di input");
+    showModalPck.value = false;
+    return;
+  }
+  const d = form.value.detail[activePckIdx.value];
+  if (!d) return;
+  d.pck = item.nomor;
+  d.mb = ""; // pastikan slot mintabeli kosong
+  if (!d.uraian)
+    d.uraian = `KLAIM PETTY CASH ${item.namaStore || item.store}`.toUpperCase();
+  if (!d.qty) d.qty = 1;
+  if (!d.harga) d.harga = item.nominal;
+  hitungTotal(d);
+  showModalPck.value = false;
+};
+
+// ── Supplier ──────────────────────────────────────────────────────────
+const showSupplierModal = ref(false);
+const showSupplierDetailModal = ref(false);
+const activeSupIdx = ref(-1);
+const supplierOptions = ref<SupplierOption[]>([]);
+const supplierDetailOptions = ref<SupplierDetailOption[]>([]);
+
+const openSupplierModal = async (idx: number) => {
+  activeSupIdx.value = idx;
+  try {
+    supplierOptions.value = await bkkFormApi.getSupplierOptions();
+    showSupplierModal.value = true;
+  } catch {
+    toast.error("Gagal mengambil data supplier.");
+  }
+};
+
+const selectSupplier = async (item: SupplierOption) => {
+  const d = form.value.detail[activeSupIdx.value];
+  if (!d) return;
+  d.supkode = item.kode;
+  d.supnama = item.nama;
+  d.bank = "";
+  d.rekening = "";
+  d.atasnama = "";
+  showSupplierModal.value = false;
+
+  try {
+    const detail = await bkkFormApi.getSupplierDetail(item.kode);
+    if (detail.length === 1) {
+      d.bank = detail[0].bank;
+      d.rekening = detail[0].rekening;
+      d.atasnama = detail[0].atasnama;
+    } else if (detail.length > 1) {
+      supplierDetailOptions.value = detail;
+      showSupplierDetailModal.value = true;
+    }
+  } catch {
+    toast.error("Gagal mengambil rekening supplier.");
+  }
+};
+
+const selectSupplierDetail = (item: SupplierDetailOption) => {
+  const d = form.value.detail[activeSupIdx.value];
+  if (!d) return;
+  d.bank = item.bank;
+  d.rekening = item.rekening;
+  d.atasnama = item.atasnama;
+  showSupplierDetailModal.value = false;
+};
+
 // ── Baris detail ──────────────────────────────────────────────────────
 const addRow = () => {
   form.value.detail.push({
@@ -250,31 +332,31 @@ const addRow = () => {
     dckode: 0,
     kdbrg: "",
     mb: "",
+    pck: "",
     jenis_item: "",
-    cab_item: "",    
+    cab_item: "",
+    supkode: "",
+    supnama: "",
+    bank: "",
+    rekening: "",
+    atasnama: "",
   });
 };
 
 const removeRow = (idx: number) => {
   const d = form.value.detail[idx];
-  // Jika MB kosong, langsung hapus row
-  if (!d.mb) {
+  const ref = d.mb || d.pck;
+  if (!ref) {
     form.value.detail.splice(idx, 1);
     return;
-  }  
-  // Jika MB terisi, minta konfirmasi
-  const mb = d.mb;
-  const yakin = window.confirm(`Yakin akan hapus no. MB ${mb}?`);
-
-  // Jika pilih Cancel
-  if (!yakin) {
-    return;
   }
+  const label = d.mb ? `MB ${d.mb}` : `Petty Cash ${d.pck}`;
+  const yakin = window.confirm(`Yakin akan hapus no. ${label}?`);
+  if (!yakin) return;
 
-  // Jika pilih OK, hapus semua row dengan MB yang sama
-  form.value.detail = form.value.detail.filter(
-    (item) => item.mb !== mb
-  );  
+  form.value.detail = form.value.detail.filter((item) =>
+    d.mb ? item.mb !== d.mb : item.pck !== d.pck,
+  );
 };
 
 // ── Validasi ──────────────────────────────────────────────────────────
@@ -316,7 +398,7 @@ const validateSave = () => {
     if (d.qty !== 0 && d.harga === 0) {
       toast.warning("Jika Qty di isi harga juga harus di isi.");
       return;
-    }   
+    }
     const prefix = (d.rekkode || "").substring(0, 1);
     if (prefix !== "A" && prefix !== "B") {
       if (d.dckode === 0) {
@@ -380,30 +462,48 @@ const confirmCancel = () => {
 const confirmClose = () => {
   showCloseDialog.value = false;
   router.push({ name: "BkkBrowse" });
-//   router.replace({ name: "BkkBrowse" });
+  //   router.replace({ name: "BkkBrowse" });
 };
 
-const onMbKeyDown = async (e: KeyboardEvent, idx: number) => {
+// ── No.Pengajuan (gabungan: F4 = mintabeli, F5 = petty cash) ──────────
+const onRefKeyDown = async (e: KeyboardEvent, idx: number) => {
   const d = form.value.detail[idx];
-  if (e.key !== "F4" || d.mb !== "") {
+  const isEmpty = !d.mb && !d.pck;
+
+  if (!["F4", "F5"].includes(e.key) || !isEmpty) {
     e.preventDefault();
     return;
   }
+  e.preventDefault();
 
-  if (["F4"].includes(e.key)) {
-    e.preventDefault(); // Blok fungsi bawaan browser (seperti Help atau Search)
+  if (e.key === "F4") {
     activePjhIdx.value = idx;
     try {
-      if (e.key === "F4") {
-        
-        optMb.value = await uangMukaPenyelesaianApi.getListPermintaanGarmen(
-          form.value.cabang,
-        );
-        showModalMb.value = true;
-      }
+      optMb.value = await uangMukaPenyelesaianApi.getListPermintaanGarmen(
+        form.value.cabang,
+      );
+      showModalMb.value = true;
     } catch {
       toast.error("Gagal mengambil data dari server.");
     }
+  } else if (e.key === "F5") {
+    activePckIdx.value = idx;
+    try {
+      optPck.value = await bkkFormApi.getPettyCashOptions();
+      showModalPck.value = true;
+    } catch {
+      toast.error("Gagal mengambil data petty cash.");
+    }
+  }
+};
+
+// Ketik manual (tanpa lookup) dianggap sebagai No. Pengajuan mintabeli
+const onRefInput = (d: BkkFormDetail, e: Event) => {
+  const val = (e.target as HTMLInputElement).value;
+  if (d.pck) {
+    d.pck = val;
+  } else {
+    d.mb = val;
   }
 };
 
@@ -420,7 +520,8 @@ const loadDetailBaru = async (nomor: string, tipe: string) => {
 
     // Gunakan fungsi detail yang spesifik
     if (tipe === "minta-garmen") {
-      detailTambahan =  await uangMukaPenyelesaianApi.getDetailPermintaanGarmen(nomor);
+      detailTambahan =
+        await uangMukaPenyelesaianApi.getDetailPermintaanGarmen(nomor);
     }
 
     // Hapus baris kosong yang sedang aktif jika uraian kosong
@@ -430,10 +531,10 @@ const loadDetailBaru = async (nomor: string, tipe: string) => {
     // Append data detail baru
     // form.value.detail.push(...detailTambahan);
     form.value.detail.push(
-        ...detailTambahan.map((item: any) => ({
+      ...detailTambahan.map((item: any) => ({
         ...item,
         dckode: item.dckode ?? 0, // Mengisi dckode dengan 0 jika nilainya tidak ada/undefined
-      }))
+      })),
     );
   } catch {
     toast.error("Gagal memuat detail.");
@@ -444,7 +545,6 @@ const selectMb = (item: any) => {
   loadDetailBaru(item.nomor, "minta-garmen");
   showModalMb.value = false;
 };
-
 </script>
 
 <template>
@@ -525,7 +625,7 @@ const selectMb = (item: any) => {
                 class="form-inp"
                 placeholder="Penerima"
                 maxlength="100"
-                @update:model-value="form.penerima= $event.toUpperCase()"
+                @update:model-value="form.penerima = $event.toUpperCase()"
               />
             </div>
             <div class="field-row">
@@ -535,7 +635,7 @@ const selectMb = (item: any) => {
                 class="form-inp"
                 placeholder="No. nota"
                 maxlength="20"
-                @update:model-value="form.nota= $event.toUpperCase()"
+                @update:model-value="form.nota = $event.toUpperCase()"
               />
             </div>
           </div>
@@ -597,7 +697,9 @@ const selectMb = (item: any) => {
             <thead>
               <tr>
                 <th style="width: 35px">No</th>
-                <th style="min-width: 120px">No.Pengajuan</th>
+                <th style="min-width: 120px">No.Pengajuan/PCK</th>
+                <th style="min-width: 160px">Supplier</th>
+                <th style="min-width: 140px">Bank / Rekening</th>
                 <th style="min-width: 220px">Uraian</th>
                 <th style="width: 55px">Satuan</th>
                 <th style="width: 80px">Qty</th>
@@ -614,18 +716,45 @@ const selectMb = (item: any) => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(d, idx) in form.detail" :key="idx" :class="{ 'row-zero-total': d.total === 0 }">
+              <tr
+                v-for="(d, idx) in form.detail"
+                :key="idx"
+                :class="{ 'row-zero-total': d.total === 0 }"
+              >
                 <td class="tc">{{ idx + 1 }}</td>
-                
-                <!-- No.Pengajuan pembelian -->
-                <td>
 
+                <!-- No.Pengajuan (F4 mintabeli / F5 petty cash) -->
+                <td>
                   <input
-                    v-model="d.mb"
+                    :value="d.mb || d.pck"
                     class="cell-inp"
-                    placeholder="F4 utk cari"
-                    @keydown="onMbKeyDown($event, idx)"
+                    placeholder="F4 mintabeli / F5 petty cash"
+                    @input="onRefInput(d, $event)"
+                    @keydown="onRefKeyDown($event, idx)"
                   />
+                </td>
+
+                <!-- Supplier -->
+                <td>
+                  <div class="d-flex align-center gap-1">
+                    <span
+                      class="cell-text"
+                      style="
+                        max-width: 130px;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                      "
+                    >
+                      {{ d.supnama || "-" }}
+                    </span>
+                    <button
+                      type="button"
+                      class="sup-btn"
+                      @click.stop.prevent="openSupplierModal(idx)"
+                    >
+                      <IconSearch :size="11" />
+                    </button>
+                  </div>
                 </td>
 
                 <!-- Uraian -->
@@ -641,10 +770,12 @@ const selectMb = (item: any) => {
 
                 <!-- Satuan -->
                 <td>
-                  <input v-model="d.satuan" class="cell-inp" 
-                   maxlength="10"
-                   @update:model-value="d.satuan = $event.toUpperCase()"
-                  />                 
+                  <input
+                    v-model="d.satuan"
+                    class="cell-inp"
+                    maxlength="10"
+                    @update:model-value="d.satuan = $event.toUpperCase()"
+                  />
                 </td>
 
                 <!-- Qty -->
@@ -676,8 +807,12 @@ const selectMb = (item: any) => {
                 </td>
 
                 <!-- Total -->
-                <td class="tr cell-total" :class="{ 'text-red': d.total === 0 }">
-                {{ fmt(d.total) }}</td>
+                <td
+                  class="tr cell-total"
+                  :class="{ 'text-red': d.total === 0 }"
+                >
+                  {{ fmt(d.total) }}
+                </td>
 
                 <!-- Account -->
                 <td>
@@ -906,7 +1041,49 @@ const selectMb = (item: any) => {
     @select="selectMb"
     search-placeholder="Cari Permintaan..."
     :search-keys="['nomor', 'jenis', 'keterangan', 'bagian']"
-  />  
+  />
+
+  <SearchModal
+    v-model="showModalPck"
+    title="Cari Petty Cash (F5)"
+    :columns="[
+      { key: 'nomor', title: 'Nomor' },
+      { key: 'tanggal', title: 'Tanggal' },
+      { key: 'namaStore', title: 'Store' },
+      { key: 'nominal', title: 'Nominal', align: 'right' },
+    ]"
+    :items="optPck"
+    @select="selectPck"
+    search-placeholder="Cari nomor petty cash..."
+    :search-keys="['nomor', 'store', 'namaStore']"
+  />
+
+  <SearchModal
+    v-model="showSupplierModal"
+    title="Pilih Supplier"
+    :columns="[
+      { key: 'kode', title: 'Kode', width: '100px' },
+      { key: 'nama', title: 'Nama Supplier' },
+    ]"
+    :items="supplierOptions"
+    @select="selectSupplier"
+    search-placeholder="Cari supplier..."
+    :search-keys="['kode', 'nama']"
+  />
+
+  <SearchModal
+    v-model="showSupplierDetailModal"
+    title="Pilih Rekening Supplier"
+    :columns="[
+      { key: 'bank', title: 'Bank' },
+      { key: 'rekening', title: 'No. Rekening' },
+      { key: 'atasnama', title: 'Atas Nama' },
+    ]"
+    :items="supplierDetailOptions"
+    @select="selectSupplierDetail"
+    search-placeholder="Cari bank..."
+    :search-keys="['bank', 'rekening', 'atasnama']"
+  />
 </template>
 
 <style scoped>
