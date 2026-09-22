@@ -761,10 +761,10 @@ const selectMb = (item: any) => {
                 <td>
                   <input
                     v-model="d.uraian"
-                    class="cell-inp"
+                    class="cell-inp uppercase-input"
                     placeholder="Keterangan pengeluaran"
                     maxlength="250"
-                    @update:model-value="d.uraian = $event.toUpperCase()"
+                    @blur="d.uraian = d.uraian.toUpperCase()"
                   />
                 </td>
 
@@ -1311,6 +1311,9 @@ const selectMb = (item: any) => {
   color: #9e9e9e;
   font-style: italic;
   padding: 12px;
+}
+.uppercase-input {
+  text-transform: uppercase;
 }
 
 .sup-btn {
