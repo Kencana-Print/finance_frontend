@@ -773,7 +773,6 @@ const selectMb = (item: any) => {
                   <input
                     v-model="d.satuan"
                     class="cell-inp"
-                    maxlength="10"
                     @update:model-value="d.satuan = $event.toUpperCase()"
                   />
                 </td>
