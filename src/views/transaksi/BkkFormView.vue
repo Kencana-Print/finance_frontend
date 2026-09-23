@@ -757,6 +757,36 @@ const selectMb = (item: any) => {
                   </div>
                 </td>
 
+                <!-- Bank / Rekening -->
+                <td>
+                  <div style="display: flex; flex-direction: column; gap: 1px">
+                    <span
+                      class="cell-text"
+                      style="
+                        font-size: 10px;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                      "
+                    >
+                      {{ d.bank ? `${d.bank} - ${d.rekening}` : "-" }}
+                    </span>
+                    <span
+                      v-if="d.atasnama"
+                      class="cell-text"
+                      style="
+                        font-size: 9px;
+                        color: #9ca3af;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                      "
+                    >
+                      {{ d.atasnama }}
+                    </span>
+                  </div>
+                </td>
+
                 <!-- Uraian -->
                 <td>
                   <input
@@ -924,7 +954,7 @@ const selectMb = (item: any) => {
                 </td>
               </tr>
               <tr v-if="!form.detail.length">
-                <td colspan="8" class="empty-td">
+                <td colspan="17" class="empty-td">
                   Belum ada item. Klik Tambah Baris.
                 </td>
               </tr>
